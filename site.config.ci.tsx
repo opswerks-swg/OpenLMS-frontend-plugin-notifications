@@ -1,8 +1,6 @@
-import { EnvironmentTypes, SiteConfig, footerApp, headerApp, shellApp } from '@openedx/frontend-base';
+import { EnvironmentTypes, SiteConfig } from '@openedx/frontend-base';
 
-import { notificationsApp } from './src';
-
-import '@openedx/frontend-base/shell/style';
+import notificationsApp from './src/app';
 
 const siteConfig: SiteConfig = {
   siteId: 'notifications-ci',
@@ -14,9 +12,6 @@ const siteConfig: SiteConfig = {
 
   environment: EnvironmentTypes.PRODUCTION,
   apps: [
-    shellApp,
-    headerApp,
-    footerApp,
     notificationsApp,
   ],
 };

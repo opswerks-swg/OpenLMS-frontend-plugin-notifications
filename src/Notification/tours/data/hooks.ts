@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { camelCaseObject, useIntl } from '@openedx/frontend-base';
+import { camelCaseObject } from '@edx/frontend-platform';
+import { useIntl } from '@edx/frontend-platform/i18n';
 import messages from '../messages';
 import tourCheckpoints from '../constants';
 import { getNotificationsTours, updateNotificationsTour } from './api';
@@ -43,19 +44,19 @@ export function useTourConfiguration() {
   return useMemo(
     () => {
       const checkpointsByKey = tourCheckpoints(intl);
-      return tours?.map((tour) => {
+      return tours?.flatMap((tour) => {
         const key = camelToConstant(tour.tourName);
         if (!(key in checkpointsByKey)) {
-          return false;
+          return [];
         }
-        return {
+        return [{
           tourId: tour.tourName,
           dismissButtonText: intl.formatMessage(messages.dismissButtonText),
           endButtonText: intl.formatMessage(messages.endButtonText),
           enabled: Boolean(tour.enabled && tour.showTour),
           onEnd: () => updateTour(tour.id),
           checkpoints: checkpointsByKey[key],
-        };
+        }];
       }) ?? [];
     },
     [intl, tours, updateTour],

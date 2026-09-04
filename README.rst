@@ -1,31 +1,37 @@
-frontend-app-notifications
-##########################
+OpenLMS frontend-plugin-notifications
+######################################
 
-|license-badge| |status-badge| |ci-badge| |codecov-badge|
+|license-badge| |status-badge| |ci-badge|
 
 .. |license-badge| image:: https://img.shields.io/badge/license-AGPL-informational
-    :target: https://github.com/openedx/frontend-app-notifications/blob/main/LICENSE
+    :target: https://github.com/opswerks-swg/OpenLMS-frontend-plugin-notifications/blob/main/LICENSE
     :alt: License
 
 .. |status-badge| image:: https://img.shields.io/badge/Status-Maintained-brightgreen
 
-.. |ci-badge| image:: https://github.com/openedx/frontend-app-notifications/actions/workflows/ci.yml/badge.svg
-    :target: https://github.com/openedx/frontend-app-notifications/actions/workflows/ci.yml
+.. |ci-badge| image:: https://github.com/opswerks-swg/OpenLMS-frontend-plugin-notifications/actions/workflows/ci.yml/badge.svg
+    :target: https://github.com/opswerks-swg/OpenLMS-frontend-plugin-notifications/actions/workflows/ci.yml
     :alt: Continuous Integration
-
-.. |codecov-badge| image:: https://codecov.io/github/openedx/frontend-app-notifications/coverage.svg?branch=main
-    :target: https://codecov.io/github/openedx/frontend-app-notifications?branch=main
-    :alt: Codecov
 
 Purpose
 =======
 
-This repository hosts ``@openedx/frontend-app-notifications``, the Open edX
-notifications frontend app. It is consumed by sites built on
-`@openedx/frontend-base`_ and contributes a notifications bell widget to the
-unified header's desktop and mobile right slots.
+This repository hosts ``@edx/frontend-plugin-notifications``, the OpenLMS
+notifications tray. It is a **header widget**, not a standalone MFE: MFEs import
+``NotificationsTray`` (or the package default) from the shared header. Do not
+register ``headerApp`` from ``@openedx/frontend-base`` in this package — that
+pulls ``@edx/frontend-component-header``, which this plugin does not depend on.
 
-.. _@openedx/frontend-base: https://github.com/openedx/frontend-base
+The live tray is a **drawer shell** (bell, header, mark-all, empty list). List
+UI components (``NotificationTabs``, ``NotificationSections``, ``NotificationRowItem``)
+remain in the tree for a future remount but are not wired into the shell today.
+
+Integration
+===========
+
+OpenLMS mounts the tray from ``frontend-component-header`` via
+``HeaderNotificationsSlot``. Classic LMS pages use a vanilla JS + SCSS mirror in
+the Indigo theme (``notifications.js`` + ``_header.scss``).
 
 Getting Started
 ===============
@@ -33,26 +39,13 @@ Getting Started
 Installation
 ------------
 
-Install the package into a site that uses ``@openedx/frontend-base``::
+The header package depends on this plugin via a local ``file:`` path::
 
-    npm install @openedx/frontend-app-notifications
+    "@edx/frontend-plugin-notifications": "file:../frontend-plugin-notifications"
 
-Then register the app's default export alongside the other ``App`` configs in
-your ``site.config.*.tsx``::
+Import in the header notifications slot::
 
-    import notificationsApp from '@openedx/frontend-app-notifications';
-    import { shellApp, headerApp, footerApp } from '@openedx/frontend-base';
-
-    const config: SiteConfig = {
-      // ...
-      apps: [shellApp, headerApp, footerApp, notificationsApp],
-    };
-
-    export default config;
-
-Named exports (``NotificationsTray``, ``Notifications``, ``useAppNotifications``,
-``useNotification``) remain available for consumers that embed the tray or its
-hooks directly.
+    import NotificationsTray from '@edx/frontend-plugin-notifications';
 
 Local Development
 -----------------
@@ -60,49 +53,20 @@ Local Development
 Clone this repository and install dependencies::
 
     npm install
+    npm run build
 
-Run the bundled dev site (shell + header + footer + this app)::
+The optional ``npm run dev`` playground loads **this plugin only** (no Open edX
+header/footer apps). For MFE work, consume the package from the header webpack
+alias as in OpenLMS ``just header-setup``.
 
-    npm run dev
+Build and Test
+--------------
 
-To develop against a local ``frontend-base`` checkout, bind-mount it into the
-workspace and run the packages-aware dev script. See the ``Makefile`` for the
-``dev-packages`` and ``bin-link`` targets.
+::
 
-Branches and Releases
-=====================
-
-This app is published to NPM by ``semantic-release``, and its branches follow
-`OEP-10 ADR 0002`_:
-
-``main``
-  Unstable.  Every merge publishes a prerelease on the ``alpha`` dist-tag.
-  Breaking changes land here with no DEPR process and no warning, so it is
-  not supported in production.  All changes, including bug fixes, should
-  target this branch first.
-
-``stable``
-  Carries the newest stable major and owns the ``latest`` dist-tag.  Changes
-  arrive here as backports from ``main``, and no breaking change lands after
-  publication.
-
-``n.x`` and ``n.m.x``
-  Maintenance branches for majors and minors that ``stable`` has moved past.
-  Each owns the dist-tag matching its own name, so consumers select a
-  maintained line by semver range, e.g. ``"3.x"``.
-
-Both ``.releaserc`` and the ``Release CI`` workflow already know the whole
-layout, including the maintenance branch patterns, so a new line starts
-publishing as soon as it is pushed.
-
-The plugin this app replaced lives on ``2.x``, which publishes
-``@edx/frontend-plugin-notifications``.  That plugin only ever worked inside the
-legacy micro-frontends, and the branch keeps it maintained for as long as they
-ship.  It deliberately owns the ``latest`` dist-tag of *that* package rather
-than the ``2.x`` dist-tag the layout above would otherwise give it; the package
-names are distinct, so the two ``latest`` tags do not collide.
-
-.. _OEP-10 ADR 0002: https://docs.openedx.org/projects/openedx-proposals/en/latest/processes/oep-0010/decisions/0002-frontend-stable-branches.html
+    npm run build
+    npm test
+    npm run lint
 
 License
 =======
@@ -115,16 +79,10 @@ Please see `LICENSE <LICENSE>`_ for details.
 Contributing
 ============
 
-Contributions are welcome.  Please open an issue or pull request on GitHub.
-All changes, including bug fixes, should target ``main`` first; see `Branches
-and Releases`_ for how they reach ``stable`` and the maintenance lines.
-
-People
-======
-
-Contact @edx/edx-infinity if you are having any trouble developing in this repository.
+Contributions are welcome. Open an issue or pull request on GitHub.
 
 Reporting Security Issues
 =========================
 
-Please do not report security issues in public. Email security@openedx.org instead.
+Please do not report security issues in public. Contact the OpenLMS maintainers
+through the repository issue tracker.

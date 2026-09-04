@@ -1,106 +1,101 @@
 import React from 'react';
 
 import {
-  act, fireEvent, render, screen,
-  waitFor,
+  act, fireEvent, screen, waitFor,
 } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import MockAdapter from 'axios-mock-adapter';
 import { Factory } from 'rosie';
 
-import {
-  IntlProvider,
-  SiteContext,
-  getSiteConfig,
-  initializeMockApp,
-} from '@openedx/frontend-base';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { getAuthenticatedHttpClient } from '@edx/frontend-platform/auth';
+import { initializeMockApp } from '@edx/frontend-platform/testing';
 
-import Notifications from './index';
-import mockNotificationsResponse from './test-utils';
-import { createTestQueryClient } from '../setupTest';
+import NotificationRowItem from './NotificationRowItem';
+import { markNotificationAsReadApiUrl } from './data/api';
+import { TEST_AUTHENTICATED_USER, renderWithProviders } from './test-harness';
 
 import './data/__factories__';
-import { useAppNotifications } from './data/hook';
 
-const authenticatedUser = {
-  userId: 3,
-  username: 'abc123',
-  email: 'abc@example.com',
-  name: 'Abc User',
-  avatar: '',
-  administrator: true,
-  roles: [],
-};
-
-const NotificationComponent = () => {
-  const { notificationAppData } = useAppNotifications();
-  if (notificationAppData?.showNotificationsTray) {
-    return <Notifications notificationAppData={notificationAppData} />;
-  }
-  return null;
-};
-
-async function renderComponent() {
-  const queryClient = createTestQueryClient();
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        <SiteContext.Provider value={{ authenticatedUser, siteConfig: getSiteConfig(), locale: 'en' }}>
-          <IntlProvider locale="en" messages={{}}>
-            <NotificationComponent />
-          </IntlProvider>
-        </SiteContext.Provider>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
-}
-
-describe('Notification row item test cases.', () => {
-  beforeEach(async () => {
-    initializeMockApp({ authenticatedUser });
-
+describe('Course assigned notification card', () => {
+  beforeEach(() => {
+    initializeMockApp({
+      authenticatedUser: {
+        ...TEST_AUTHENTICATED_USER,
+        administrator: true,
+      },
+    });
     Factory.resetAll();
-
-    await mockNotificationsResponse();
   });
 
-  it(
-    'Successfully viewed notification icon, notification context, unread , course name and notification time.',
-    async () => {
-      await renderComponent();
+  it('renders course assigned heading, body, due date, assigned by, and relative time', () => {
+    renderWithProviders(
+      <NotificationRowItem
+        id={99}
+        type="course_assigned"
+        contentUrl="https://local.openedx.io/courses/demo/home"
+        content="You have been assigned a new course."
+        contentContext={{
+          courseTitle: 'Supply Chain Analytics',
+          dueDate: '2026-10-15T00:00:00Z',
+          assignedBy: 'Jane Instructor',
+        }}
+        courseName="Supply Chain Analytics"
+        createdAt={new Date().toISOString()}
+      />,
+    );
 
-      await waitFor(async () => {
-        const bellIcon = await screen.findByTestId('notification-bell-icon');
-        await act(async () => {
-          fireEvent.click(bellIcon);
-        });
+    expect(screen.getByTestId('notification-assigned-title-99')).toHaveTextContent('New Course Assigned');
+    expect(screen.getByTestId('notification-course-99')).toHaveTextContent(
+      'Supply Chain Analytics has been assigned to you',
+    );
+    expect(screen.getByTestId('notification-due-date-99')).toHaveTextContent('Due:');
+    expect(screen.getByTestId('notification-assigned-by-99')).toHaveTextContent('Assigned by: Jane Instructor');
+    expect(screen.getByTestId('notification-created-date-99')).toBeInTheDocument();
+  });
+});
 
-        expect(screen.queryByTestId('notification-icon-1')).toBeInTheDocument();
-        expect(screen.queryByTestId('notification-content-1')).toBeInTheDocument();
-        expect(screen.queryByTestId('notification-course-1')).toBeInTheDocument();
-        expect(screen.queryByTestId('notification-created-date-1')).toBeInTheDocument();
-        expect(screen.queryByTestId('unread-notification-1')).toBeInTheDocument();
-      });
-    },
-  );
+describe('Notification row item integration', () => {
+  let axiosMock: MockAdapter;
+  let openSpy: jest.SpyInstance;
 
-  it('Successfully marked notification as read.', async () => {
-    await renderComponent();
-
-    await waitFor(async () => {
-      const bellIcon = await screen.findByTestId('notification-bell-icon');
-      await act(async () => {
-        fireEvent.click(bellIcon);
-      });
-
-      const notification = screen.queryByTestId('notification-1');
-      if (notification) {
-        await act(async () => {
-          fireEvent.click(notification);
-        });
-      }
-
-      expect(screen.queryByTestId('unread-notification-1')).not.toBeInTheDocument();
+  beforeEach(() => {
+    initializeMockApp({
+      authenticatedUser: {
+        ...TEST_AUTHENTICATED_USER,
+        administrator: true,
+      },
     });
+    Factory.resetAll();
+    axiosMock = new MockAdapter(getAuthenticatedHttpClient());
+    axiosMock.onPatch(markNotificationAsReadApiUrl()).reply(200, { message: 'Notification marked read.' });
+    openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+  });
+
+  afterEach(() => {
+    axiosMock.reset();
+    openSpy.mockRestore();
+  });
+
+  it('marks a legacy notification as read on click', async () => {
+    renderWithProviders(
+      <NotificationRowItem
+        id={1}
+        type="new_comment"
+        contentUrl="https://example.com/1"
+        content="<p><strong>User 1</strong> commented</p>"
+        courseName="Supply Chain Analytics"
+        createdAt={new Date().toISOString()}
+      />,
+    );
+
+    expect(screen.getByTestId('unread-notification-1')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('notification-1'));
+    });
+
+    await waitFor(() => {
+      expect(axiosMock.history.patch.length).toBe(1);
+    });
+    expect(openSpy).toHaveBeenCalledWith('https://example.com/1', '_blank', 'noopener,noreferrer');
   });
 });

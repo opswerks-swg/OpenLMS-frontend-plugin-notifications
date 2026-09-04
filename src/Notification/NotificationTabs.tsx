@@ -1,10 +1,10 @@
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 
 import { Tab, Tabs } from '@openedx/paragon';
 
 import NotificationSections from './NotificationSections';
 import { notificationsContext } from './context/notificationsContext';
-import { NotificationAppData, useMarkNotificationSeen } from './data/hook';
+import { NotificationAppData } from './data/hook';
 
 interface NotificationTabsProps {
   notificationAppData: NotificationAppData;
@@ -13,14 +13,6 @@ interface NotificationTabsProps {
 const NotificationTabs: React.FC<NotificationTabsProps> = ({ notificationAppData }) => {
   const { appName, handleActiveTab } = useContext(notificationsContext);
   const { appsId, tabsCount } = notificationAppData;
-  const { mutate: markSeen } = useMarkNotificationSeen();
-  const unseenForActiveApp = appName ? (tabsCount[appName] ?? 0) : 0;
-
-  useEffect(() => {
-    if (appName && unseenForActiveApp > 0) {
-      markSeen(appName);
-    }
-  }, [appName, unseenForActiveApp, markSeen]);
 
   return (
     appsId.length > 1
@@ -29,7 +21,7 @@ const NotificationTabs: React.FC<NotificationTabsProps> = ({ notificationAppData
             variant="tabs"
             defaultActiveKey={appName}
             onSelect={handleActiveTab}
-            className="px-2.5 text-primary-500 tabs position-sticky zIndex-2 bg-white"
+            className="lw-notifications-drawer__tabs text-primary-500"
           >
             {appsId.map((app) => (
               <Tab

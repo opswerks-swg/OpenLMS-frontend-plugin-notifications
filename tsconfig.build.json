@@ -3,7 +3,11 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "noEmit": false
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "types": []
   },
   "include": [
     "src/**/*"
@@ -13,6 +17,10 @@
     "src/**/*.spec.*",
     "src/**/tests/**/*",
     "src/__mocks__/**/*",
-    "src/setupTest.*"
+    "src/setupTest.*",
+    "src/app.ts",
+    "src/slots.tsx",
+    "src/i18n/**/*",
+    "src/Notification/test-harness.tsx"
   ]
 }

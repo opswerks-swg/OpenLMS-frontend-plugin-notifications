@@ -1,4 +1,4 @@
-import { IntlShape } from '@openedx/frontend-base';
+import { IntlShape } from '@edx/frontend-platform/i18n';
 import messages from './messages';
 
 export default function tourCheckpoints(intl: IntlShape) {

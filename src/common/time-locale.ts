@@ -1,19 +1,19 @@
 export default function timeLocale(number: number, index: number): [string, string] {
   const table: [string, string][] = [
     ['just now', 'right now'],
-    ['%ss', 'in %s seconds'],
-    ['1m', 'in 1 minute'],
-    ['%sm', 'in %s minutes'],
-    ['1h', 'in 1 hour'],
-    ['%sh', 'in %s hours'],
-    ['1d', 'in 1 day'],
-    ['%sd', 'in %s days'],
-    ['1w', 'in 1 week'],
-    ['%sw', 'in %s weeks'],
-    ['4w', 'in 1 month'],
-    [`${number * 4}w`, 'in %s months'],
-    ['1y', 'in 1 year'],
-    ['%sy', 'in %s years'],
+    ['%s seconds ago', 'in %s seconds'],
+    ['1 minute ago', 'in 1 minute'],
+    ['%s mins ago', 'in %s minutes'],
+    ['1 hour ago', 'in 1 hour'],
+    ['%s hours ago', 'in %s hours'],
+    ['1 day ago', 'in 1 day'],
+    ['%s days ago', 'in %s days'],
+    ['1 week ago', 'in 1 week'],
+    ['%s weeks ago', 'in %s weeks'],
+    ['1 month ago', 'in 1 month'],
+    ['%s months ago', 'in %s months'],
+    ['1 year ago', 'in 1 year'],
+    ['%s years ago', 'in %s years'],
   ];
   return table[index];
 }
