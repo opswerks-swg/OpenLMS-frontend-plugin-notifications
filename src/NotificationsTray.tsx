@@ -5,9 +5,9 @@ import Notifications from './Notification';
 import { useAppNotifications } from './Notification/data/hook';
 
 interface NotificationsTrayProps {
-  margins?: string;
-  onDrawerMountedChange?: (mounted: boolean) => void;
-  onDrawerOpenChange?: (open: boolean) => void;
+  margins?: string,
+  onDrawerMountedChange?: (mounted: boolean) => void,
+  onDrawerOpenChange?: (open: boolean) => void,
 }
 
 const NotificationsTrayInner: React.FC<NotificationsTrayProps> = (props) => {

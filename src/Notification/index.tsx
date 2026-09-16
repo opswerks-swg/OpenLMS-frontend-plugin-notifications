@@ -26,10 +26,10 @@ import { useDrawerEscapeKey } from './useDrawerEscapeKey';
 import './notification.scss';
 
 interface NotificationsProps {
-  notificationAppData?: NotificationAppData;
-  margins?: string;
-  onDrawerMountedChange?: (mounted: boolean) => void;
-  onDrawerOpenChange?: (open: boolean) => void;
+  notificationAppData?: NotificationAppData,
+  margins?: string,
+  onDrawerMountedChange?: (mounted: boolean) => void,
+  onDrawerOpenChange?: (open: boolean) => void,
 }
 
 const defaultNotificationAppData: NotificationAppData = {
@@ -204,76 +204,76 @@ const Notifications: React.FC<NotificationsProps> = ({
 
   const drawerPortal = isDrawerMounted && typeof document !== 'undefined'
     ? ReactDOM.createPortal(
-      <>
-        <button
-          ref={backdropRef}
-          type="button"
-          className={classNames('lw-notifications-drawer__backdrop', {
-            'lw-notifications-drawer__backdrop--open': isDrawerOpen,
-          })}
-          style={getDrawerBackdropStyle()}
-          aria-hidden="true"
-          tabIndex={-1}
-          data-testid="notification-drawer-backdrop"
-          onClick={closeDrawer}
-        />
-        <div
-          ref={drawerRef}
-          id="lw-notifications-drawer"
-          className={classNames('lw-notifications-drawer', {
-            'lw-notifications-drawer--open': isDrawerOpen,
-          })}
-          style={getDrawerPanelStyle()}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="lw-notifications-drawer-title"
-          data-testid="notification-tray"
-        >
-          <div ref={headerRef} className="lw-notifications-drawer__header">
-            <div className="lw-notifications-drawer__heading">
-              <NotificationHeadingIcon className="lw-notifications-drawer__heading-icon" />
-              <h2 id="lw-notifications-drawer-title" className="lw-notifications-drawer__title">
-                {intl.formatMessage(messages.notificationTitle)}
-              </h2>
-              <span
-                className={classNames('lw-notifications-drawer__count-badge', {
-                  'lw-notifications-drawer__count-badge--wide': unreadCount >= 10,
-                })}
-                data-testid="notification-drawer-count"
-              >
-                {unreadCount >= 100 ? '99+' : unreadCount}
-              </span>
+        <>
+          <button
+            ref={backdropRef}
+            type="button"
+            className={classNames('lw-notifications-drawer__backdrop', {
+              'lw-notifications-drawer__backdrop--open': isDrawerOpen,
+            })}
+            style={getDrawerBackdropStyle()}
+            aria-hidden="true"
+            tabIndex={-1}
+            data-testid="notification-drawer-backdrop"
+            onClick={closeDrawer}
+          />
+          <div
+            ref={drawerRef}
+            id="lw-notifications-drawer"
+            className={classNames('lw-notifications-drawer', {
+              'lw-notifications-drawer--open': isDrawerOpen,
+            })}
+            style={getDrawerPanelStyle()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lw-notifications-drawer-title"
+            data-testid="notification-tray"
+          >
+            <div ref={headerRef} className="lw-notifications-drawer__header">
+              <div className="lw-notifications-drawer__heading">
+                <NotificationHeadingIcon className="lw-notifications-drawer__heading-icon" />
+                <h2 id="lw-notifications-drawer-title" className="lw-notifications-drawer__title">
+                  {intl.formatMessage(messages.notificationTitle)}
+                </h2>
+                <span
+                  className={classNames('lw-notifications-drawer__count-badge', {
+                    'lw-notifications-drawer__count-badge--wide': unreadCount >= 10,
+                  })}
+                  data-testid="notification-drawer-count"
+                >
+                  {unreadCount >= 100 ? '99+' : unreadCount}
+                </span>
+              </div>
+              <div className="lw-notifications-drawer__header-actions">
+                <button
+                  type="button"
+                  className="lw-notifications-drawer__mark-all"
+                  onClick={handleMarkAllAsRead}
+                  data-testid="mark-all-read"
+                >
+                  {intl.formatMessage(messages.notificationMarkAsRead)}
+                </button>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  className="lw-notifications-drawer__close"
+                  onClick={closeDrawer}
+                  aria-label={intl.formatMessage(messages.notificationCloseButtonAltMessage)}
+                  data-testid="notification-drawer-close"
+                >
+                  <NotificationCloseIcon />
+                </button>
+              </div>
             </div>
-            <div className="lw-notifications-drawer__header-actions">
-              <button
-                type="button"
-                className="lw-notifications-drawer__mark-all"
-                onClick={handleMarkAllAsRead}
-                data-testid="mark-all-read"
-              >
-                {intl.formatMessage(messages.notificationMarkAsRead)}
-              </button>
-              <button
-                ref={closeButtonRef}
-                type="button"
-                className="lw-notifications-drawer__close"
-                onClick={closeDrawer}
-                aria-label={intl.formatMessage(messages.notificationCloseButtonAltMessage)}
-                data-testid="notification-drawer-close"
-              >
-                <NotificationCloseIcon />
-              </button>
+            <div className="lw-notifications-drawer__list">
+              <notificationDrawerContext.Provider value={drawerContextValue}>
+                <NotificationSections />
+              </notificationDrawerContext.Provider>
             </div>
           </div>
-          <div className="lw-notifications-drawer__list">
-            <notificationDrawerContext.Provider value={drawerContextValue}>
-              <NotificationSections notificationAppData={notificationAppData} />
-            </notificationDrawerContext.Provider>
-          </div>
-        </div>
-      </>,
-      getNotificationDrawerPortalTarget(),
-    )
+        </>,
+        getNotificationDrawerPortalTarget(),
+      )
     : null;
 
   return (

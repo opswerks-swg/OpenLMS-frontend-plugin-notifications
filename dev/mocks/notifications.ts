@@ -1,32 +1,32 @@
 import type MockAdapter from 'axios-mock-adapter';
 
 interface NotificationSeed {
-  notification_type: string;
-  content: string;
+  notification_type: string,
+  content: string,
   content_context?: {
-    course_name?: string;
-    course_title?: string;
-    due_date?: string;
-    assigned_by?: string;
-  };
-  unseen?: boolean;
+    course_name?: string,
+    course_title?: string,
+    due_date?: string,
+    assigned_by?: string,
+  },
+  unseen?: boolean,
 }
 
 interface StoredNotification {
-  id: number;
-  app_name: string;
-  notification_type: string;
-  content: string;
-  content_url: string;
+  id: number,
+  app_name: string,
+  notification_type: string,
+  content: string,
+  content_url: string,
   content_context: {
-    course_name: string;
-    course_title?: string;
-    due_date?: string;
-    assigned_by?: string;
-  };
-  created: string;
-  last_read: string | null;
-  last_seen: string | null;
+    course_name: string,
+    course_title?: string,
+    due_date?: string,
+    assigned_by?: string,
+  },
+  created: string,
+  last_read: string | null,
+  last_seen: string | null,
 }
 
 const seedsByApp: Record<string, NotificationSeed[]> = {
@@ -168,7 +168,7 @@ export function registerNotificationsMocks(mock: MockAdapter, lmsBaseUrl: string
   });
 
   mock.onPut(new RegExp(`^${lmsBaseUrl}/api/notifications/mark-seen/([^/]+)/?$`)).reply((config) => {
-    const match = config.url?.match(/\/mark-seen\/([^/?]+)\/?/);
+    const match = /\/mark-seen\/([^/?]+)\/?/.exec(config.url ?? '');
     const appName = match?.[1];
     if (appName) {
       const now = new Date().toISOString();

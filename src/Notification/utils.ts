@@ -5,8 +5,8 @@ import {
 } from './constants';
 
 export interface SplitNotifications {
-  today: NotificationItem[];
-  earlier: NotificationItem[];
+  today: NotificationItem[],
+  earlier: NotificationItem[],
 }
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -66,13 +66,13 @@ export function extractCourseIdFromUrl(contentUrl?: string | null): string | nul
   if (!contentUrl) {
     return null;
   }
-  const match = contentUrl.match(/\/courses\/(course-v1:[^/]+)\//i);
+  const match = /\/courses\/(course-v1:[^/]+)\//i.exec(contentUrl);
   return match?.[1] ?? null;
 }
 
 export function humanizeCourseKey(value: string): string {
   const trimmed = value.trim();
-  const match = trimmed.match(/^course-v1:([^+]+)\+([^+]+)\+([^/?]+)$/i);
+  const match = /^course-v1:([^+]+)\+([^+]+)\+([^/?]+)$/i.exec(trimmed);
   if (!match) {
     return trimmed;
   }

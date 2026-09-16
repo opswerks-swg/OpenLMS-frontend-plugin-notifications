@@ -7,7 +7,7 @@ import { notificationsContext } from './context/notificationsContext';
 import { NotificationAppData } from './data/hook';
 
 interface NotificationTabsProps {
-  notificationAppData: NotificationAppData;
+  notificationAppData: NotificationAppData,
 }
 
 const NotificationTabs: React.FC<NotificationTabsProps> = ({ notificationAppData }) => {
@@ -32,12 +32,12 @@ const NotificationTabs: React.FC<NotificationTabsProps> = ({ notificationAppData
                 tabClassName="pt-0 py-2 px-2.5 d-flex border-top-0 mb-0 align-items-center line-height-24 text-capitalize"
                 data-testid={`notification-tab-${app}`}
               >
-                {appName === app && <NotificationSections notificationAppData={notificationAppData} />}
+                {appName === app && <NotificationSections />}
               </Tab>
             ))}
           </Tabs>
         )
-      : <NotificationSections notificationAppData={notificationAppData} />
+      : <NotificationSections />
   );
 };
 

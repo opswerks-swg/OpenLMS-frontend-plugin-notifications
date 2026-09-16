@@ -21,23 +21,23 @@ import { NewCourseAssignedIcon } from './icons';
 timeago.register('time-locale', timeLocale);
 
 interface NotificationRowItemProps {
-  id: number;
-  type?: string;
-  contentUrl: string;
-  content: string;
-  contentContext?: NotificationContentContext;
-  courseName: string;
-  courseTitleMap?: Record<string, string>;
-  createdAt: string;
-  lastRead?: string | null;
+  id: number,
+  type?: string,
+  contentUrl: string,
+  content: string,
+  contentContext?: NotificationContentContext,
+  courseName: string,
+  courseTitleMap?: Record<string, string>,
+  createdAt: string,
+  lastRead?: string | null,
 }
 
 interface NotificationCardLinkProps {
-  id: number;
-  href: string;
-  className: string;
-  onClick: (event: React.MouseEvent) => void;
-  children: React.ReactNode;
+  id: number,
+  href: string,
+  className: string,
+  onClick: (event: React.MouseEvent) => void,
+  children: React.ReactNode,
 }
 
 const NotificationCardLink: React.FC<NotificationCardLinkProps> = ({

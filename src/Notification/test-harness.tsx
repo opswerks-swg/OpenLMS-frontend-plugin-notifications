@@ -22,7 +22,7 @@ export const TEST_AUTHENTICATED_USER = {
 };
 
 interface NotificationsFromQueryProps {
-  onDrawerMountedChange?: (mounted: boolean) => void;
+  onDrawerMountedChange?: (mounted: boolean) => void,
 }
 
 export const NotificationsFromQuery: React.FC<NotificationsFromQueryProps> = ({
@@ -41,7 +41,7 @@ export const NotificationsFromQuery: React.FC<NotificationsFromQueryProps> = ({
 };
 
 interface RenderWithProvidersOptions {
-  route?: string;
+  route?: string,
 }
 
 export function renderWithProviders(

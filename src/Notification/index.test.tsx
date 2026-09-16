@@ -38,9 +38,9 @@ function mockNotificationApis(
     showNotificationsTray = true,
     listResults = [],
   }: {
-    count?: number;
-    showNotificationsTray?: boolean;
-    listResults?: unknown[];
+    count?: number,
+    showNotificationsTray?: boolean,
+    listResults?: unknown[],
   } = {},
 ) {
   axios.onGet(notificationCountsApiUrl).reply(200, Factory.build('notificationsCount', {

@@ -25,7 +25,8 @@
   "include": [
     "src/**/*",
     "dev/**/*",
-    "app.d.ts"
+    "app.d.ts",
+    "site.config.*"
   ],
   "exclude": [
     "node_modules",

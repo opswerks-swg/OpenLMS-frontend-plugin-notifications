@@ -6,13 +6,9 @@ import NotificationEmptySection from './NotificationEmptySection';
 import NotificationRowItem from './NotificationRowItem';
 import messages from './messages';
 import { notificationsContext } from './context/notificationsContext';
-import { NotificationAppData, useCourseTitleMap, useNotificationList } from './data/hook';
+import { useCourseTitleMap, useNotificationList } from './data/hook';
 
-interface NotificationSectionsProps {
-  notificationAppData: NotificationAppData;
-}
-
-const NotificationSections: React.FC<NotificationSectionsProps> = ({ notificationAppData }) => {
+const NotificationSections: React.FC = () => {
   const intl = useIntl();
   const { appName } = useContext(notificationsContext);
 

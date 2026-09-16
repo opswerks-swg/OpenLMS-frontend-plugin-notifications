@@ -24,30 +24,30 @@ import type { NotificationItem, Pagination, TabsCount } from '../context/notific
 import { extractCourseIdFromUrl, humanizeCourseKey, isCourseKey } from '../utils';
 
 export interface NotificationAppData {
-  tabsCount: TabsCount;
-  appsId: string[];
-  apps: Record<string, string[]>;
-  showNotificationsTray: boolean;
-  notificationExpiryDays: number;
-  isNewNotificationViewEnabled: boolean;
+  tabsCount: TabsCount,
+  appsId: string[],
+  apps: Record<string, string[]>,
+  showNotificationsTray: boolean,
+  notificationExpiryDays: number,
+  isNewNotificationViewEnabled: boolean,
 }
 
 interface CountsResponseCamel {
-  count: number;
-  countByAppName: Record<string, number>;
-  showNotificationsTray: boolean;
-  notificationExpiryDays?: number;
-  isNewNotificationViewEnabled: boolean;
+  count: number,
+  countByAppName: Record<string, number>,
+  showNotificationsTray: boolean,
+  notificationExpiryDays?: number,
+  isNewNotificationViewEnabled: boolean,
 }
 
 interface ListPageCamel {
-  next: string | null;
-  previous: string | null;
-  count: number;
-  numPages: number;
-  currentPage: number;
-  start: number;
-  results: NotificationItem[];
+  next: string | null,
+  previous: string | null,
+  count: number,
+  numPages: number,
+  currentPage: number,
+  start: number,
+  results: NotificationItem[],
 }
 
 export const QK = {
@@ -106,13 +106,13 @@ export function useAppNotifications() {
 }
 
 export interface UseNotificationListResult {
-  notifications: NotificationItem[];
-  pagination: Pagination;
-  hasMorePages: boolean;
-  isPending: boolean;
-  isFetching: boolean;
-  isError: boolean;
-  loadMore: () => void;
+  notifications: NotificationItem[],
+  pagination: Pagination,
+  hasMorePages: boolean,
+  isPending: boolean,
+  isFetching: boolean,
+  isError: boolean,
+  loadMore: () => void,
 }
 
 export function useNotificationList(appName: string): UseNotificationListResult {
@@ -184,8 +184,8 @@ function collectCourseIdsForTitleResolution(notifications: NotificationItem[]): 
 }
 
 interface CourseTitleResultCamel {
-  courseId: string;
-  courseTitle: string;
+  courseId: string,
+  courseTitle: string,
 }
 
 export function useCourseTitleMap(notifications: NotificationItem[]): Record<string, string> {
