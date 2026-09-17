@@ -1,24 +1,59 @@
 import type MockAdapter from 'axios-mock-adapter';
 
 interface NotificationSeed {
-  notification_type: string;
-  content: string;
-  unseen?: boolean;
+  notification_type: string,
+  content: string,
+  content_context?: {
+    course_name?: string,
+    course_title?: string,
+    due_date?: string,
+    assigned_by?: string,
+  },
+  unseen?: boolean,
 }
 
 interface StoredNotification {
-  id: number;
-  app_name: string;
-  notification_type: string;
-  content: string;
-  content_url: string;
-  content_context: { course_name: string };
-  created: string;
-  last_read: string | null;
-  last_seen: string | null;
+  id: number,
+  app_name: string,
+  notification_type: string,
+  content: string,
+  content_url: string,
+  content_context: {
+    course_name: string,
+    course_title?: string,
+    due_date?: string,
+    assigned_by?: string,
+  },
+  created: string,
+  last_read: string | null,
+  last_seen: string | null,
 }
 
 const seedsByApp: Record<string, NotificationSeed[]> = {
+  assignments: [
+    {
+      notification_type: 'course_assigned',
+      content: 'You have been assigned a new course.',
+      content_context: {
+        course_name: 'Supply Chain Analytics',
+        course_title: 'Supply Chain Analytics',
+        due_date: '2026-10-15T00:00:00Z',
+        assigned_by: 'Jane Instructor',
+      },
+      unseen: true,
+    },
+    {
+      notification_type: 'course_assigned',
+      content: 'You have been assigned a new course.',
+      content_context: {
+        course_name: 'Operations Management',
+        course_title: 'Operations Management',
+        due_date: '2026-11-01T00:00:00Z',
+        assigned_by: 'Alex Admin',
+      },
+      unseen: true,
+    },
+  ],
   discussion: [
     { notification_type: 'new_comment', content: '<strong>alice</strong> replied to your post in <em>Week 2 Discussion</em>', unseen: true },
     { notification_type: 'new_response', content: '<strong>bob</strong> responded to your question about assignment 3', unseen: true },
@@ -63,8 +98,15 @@ function buildInitialState(): StoredNotification[] {
         app_name: appName,
         notification_type: seed.notification_type,
         content: seed.content,
-        content_url: '#',
-        content_context: { course_name: 'Intro to Open edX' },
+        content_url: appName === 'assignments'
+          ? 'https://local.openedx.io/courses/course-v1:edX+DemoX+Demo_Course/home'
+          : '#',
+        content_context: {
+          course_name: seed.content_context?.course_name ?? 'Intro to Open edX',
+          course_title: seed.content_context?.course_title,
+          due_date: seed.content_context?.due_date,
+          assigned_by: seed.content_context?.assigned_by,
+        },
         created,
         last_read: isUnseen ? null : new Date(olderStart).toISOString(),
         last_seen: isUnseen ? null : new Date(olderStart).toISOString(),
@@ -77,20 +119,21 @@ function buildInitialState(): StoredNotification[] {
 export function registerNotificationsMocks(mock: MockAdapter, lmsBaseUrl: string): void {
   const state = buildInitialState();
 
-  const countUnseen = () => state.reduce<Record<string, number>>((acc, n) => {
-    if (n.last_seen === null) {
+  const countUnread = () => state.reduce<Record<string, number>>((acc, n) => {
+    if (n.last_read === null) {
       acc[n.app_name] = (acc[n.app_name] ?? 0) + 1;
     }
     return acc;
   }, {});
 
-  mock.onGet(`${lmsBaseUrl}/api/notifications/count/`).reply(() => {
-    const countByApp = countUnseen();
+  const unreadCountHandler = () => {
+    const countByApp = countUnread();
     const total = Object.values(countByApp).reduce((a, b) => a + b, 0);
     return [200, {
       show_notifications_tray: true,
       count: total,
       count_by_app_name: {
+        assignments: countByApp.assignments ?? 0,
         discussion: countByApp.discussion ?? 0,
         updates: countByApp.updates ?? 0,
         grading: countByApp.grading ?? 0,
@@ -98,10 +141,13 @@ export function registerNotificationsMocks(mock: MockAdapter, lmsBaseUrl: string
       notification_expiry_days: 60,
       is_new_notification_view_enabled: false,
     }];
-  });
+  };
+
+  mock.onGet(`${lmsBaseUrl}/api/openlms/notifications/unread-count/`).reply(unreadCountHandler);
+  mock.onGet(`${lmsBaseUrl}/api/notifications/count/`).reply(unreadCountHandler);
 
   mock.onGet(new RegExp(`^${lmsBaseUrl}/api/notifications/(\\?.*)?$`)).reply((config) => {
-    const appName = String(config.params?.app_name ?? 'discussion');
+    const appName = String(config.params?.app_name ?? 'assignments');
     const page = Number(config.params?.page ?? 1);
     const items = state
       .filter((n) => n.app_name === appName)
@@ -122,7 +168,7 @@ export function registerNotificationsMocks(mock: MockAdapter, lmsBaseUrl: string
   });
 
   mock.onPut(new RegExp(`^${lmsBaseUrl}/api/notifications/mark-seen/([^/]+)/?$`)).reply((config) => {
-    const match = config.url?.match(/\/mark-seen\/([^/?]+)\/?/);
+    const match = /\/mark-seen\/([^/?]+)\/?/.exec(config.url ?? '');
     const appName = match?.[1];
     if (appName) {
       const now = new Date().toISOString();

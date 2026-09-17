@@ -1,4 +1,4 @@
-import { defineMessages } from '@openedx/frontend-base';
+import { defineMessages } from '@edx/frontend-platform/i18n';
 
 const messages = defineMessages({
   notificationTitle: {
@@ -31,6 +31,11 @@ const messages = defineMessages({
     defaultMessage: 'Load more notifications',
     description: 'Load more button to load more notifications',
   },
+  loadingNotifications: {
+    id: 'notification.loading.message',
+    defaultMessage: 'Loading…',
+    description: 'Loading state while notifications are fetched',
+  },
   allRecentNotificationsMessage: {
     id: 'notification.recent.all.message',
     defaultMessage: 'That’s all of your recent notifications!',
@@ -55,6 +60,36 @@ const messages = defineMessages({
     id: 'notification.bell.icon.alt.message',
     defaultMessage: 'Notification bell icon',
     description: 'Alt message for notification bell icon',
+  },
+  notificationCloseButtonAltMessage: {
+    id: 'notification.close.button.alt.message',
+    defaultMessage: 'Close notifications',
+    description: 'Alt message for drawer close button',
+  },
+  notificationAssignedTitle: {
+    id: 'notification.assigned.title',
+    defaultMessage: 'New Course Assigned',
+    description: 'Heading for course assigned notification cards',
+  },
+  notificationAssignedBody: {
+    id: 'notification.assigned.body',
+    defaultMessage: '{courseTitle} has been assigned to you',
+    description: 'Body text for course assigned notification cards',
+  },
+  notificationDueDateLabel: {
+    id: 'notification.due.date.label',
+    defaultMessage: 'Due: {dueDate}',
+    description: 'Due date label for course assigned notifications',
+  },
+  notificationAssignedByLabel: {
+    id: 'notification.assigned.by.label',
+    defaultMessage: 'Assigned by: {assignedBy}',
+    description: 'Assigned by label for course assigned notifications',
+  },
+  notificationUnreadLabel: {
+    id: 'notification.unread.label',
+    defaultMessage: 'Unread notification',
+    description: 'Screen reader label for unread notification indicator',
   },
 });
 

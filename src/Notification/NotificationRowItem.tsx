@@ -1,91 +1,167 @@
 import React, { useCallback } from 'react';
 
+import classNames from 'classnames';
 import * as timeago from 'timeago.js';
 import DOMPurify from 'dompurify';
 
-import { useIntl } from '@openedx/frontend-base';
-import { Icon, Hyperlink } from '@openedx/paragon';
+import { useIntl } from '@edx/frontend-platform/i18n';
 
 import messages from './messages';
 import timeLocale from '../common/time-locale';
-import { getIconByType } from './utils';
+import {
+  formatDueDate,
+  getCourseTitle,
+  getSafeNotificationUrl,
+  isCourseAssignedNotification,
+} from './utils';
 import { useMarkNotificationRead } from './data/hook';
+import { NotificationContentContext } from './context/notificationsContext';
+import { NewCourseAssignedIcon } from './icons';
+
+timeago.register('time-locale', timeLocale);
 
 interface NotificationRowItemProps {
-  id: number;
-  type?: string;
-  contentUrl: string;
-  content: string;
-  courseName: string;
-  createdAt: string;
-  lastRead?: string | null;
+  id: number,
+  type?: string,
+  contentUrl: string,
+  content: string,
+  contentContext?: NotificationContentContext,
+  courseName: string,
+  courseTitleMap?: Record<string, string>,
+  createdAt: string,
+  lastRead?: string | null,
 }
 
+interface NotificationCardLinkProps {
+  id: number,
+  href: string,
+  className: string,
+  onClick: (event: React.MouseEvent) => void,
+  children: React.ReactNode,
+}
+
+const NotificationCardLink: React.FC<NotificationCardLinkProps> = ({
+  id, href, className, onClick, children,
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className={className}
+    onClick={onClick}
+    data-testid={`notification-${id}`}
+  >
+    {children}
+  </a>
+);
+
 const NotificationRowItem: React.FC<NotificationRowItemProps> = ({
-  id, type = '', contentUrl, content, courseName, createdAt, lastRead = '',
+  id,
+  type = '',
+  contentUrl,
+  content,
+  contentContext,
+  courseName,
+  courseTitleMap,
+  createdAt,
+  lastRead = '',
 }) => {
-  timeago.register('time-locale', timeLocale);
   const intl = useIntl();
   const { mutateAsync: markAsRead } = useMarkNotificationRead();
-  const sanitizedContent = DOMPurify.sanitize(content);
+  const isUnread = !lastRead;
+  const relativeTime = timeago.format(createdAt, 'time-locale');
+  const safeContentUrl = getSafeNotificationUrl(contentUrl) ?? '#';
+  const isAssigned = isCourseAssignedNotification(type);
 
-  const handleMarkAsRead = useCallback(async () => {
+  const handleNotificationClick = useCallback(async (event: React.MouseEvent) => {
+    event.preventDefault();
+    const safeUrl = getSafeNotificationUrl(contentUrl);
+    if (!safeUrl) {
+      return;
+    }
     if (!lastRead) {
       await markAsRead(id);
     }
-  }, [id, lastRead, markAsRead]);
+    window.open(safeUrl, '_blank', 'noopener,noreferrer');
+  }, [contentUrl, id, lastRead, markAsRead]);
 
-  const handleNotificationClick = async (event: React.MouseEvent) => {
-    event.preventDefault();
+  const cardClassName = classNames('lw-notification-card', {
+    'lw-notification-card--assigned': isAssigned,
+    'lw-notification-card--unread': isUnread && !isAssigned,
+  });
 
-    await handleMarkAsRead();
-
-    window.open(contentUrl, '_blank');
+  const cardLinkProps = {
+    id,
+    href: safeContentUrl,
+    className: cardClassName,
+    onClick: handleNotificationClick,
   };
 
-  const { icon: iconComponent, class: iconClass } = getIconByType(type);
+  if (isAssigned) {
+    const courseTitle = getCourseTitle(contentContext, courseName, contentUrl, courseTitleMap);
+    const dueDateLabel = formatDueDate(contentContext?.dueDate, intl.locale);
+    const assignedBy = contentContext?.assignedBy;
+
+    return (
+      <NotificationCardLink {...cardLinkProps}>
+        <span className="lw-notification-card__accent" aria-hidden="true" />
+        <div className="lw-notification-card__content">
+          <div className="lw-notification-card__header">
+            <NewCourseAssignedIcon />
+            <span className="lw-notification-card__heading" data-testid={`notification-assigned-title-${id}`}>
+              {intl.formatMessage(messages.notificationAssignedTitle)}
+            </span>
+          </div>
+          <p className="lw-notification-card__message" data-testid={`notification-course-${id}`}>
+            {intl.formatMessage(messages.notificationAssignedBody, { courseTitle })}
+          </p>
+          {dueDateLabel && (
+            <span data-testid={`notification-due-date-${id}`}>
+              {intl.formatMessage(messages.notificationDueDateLabel, { dueDate: dueDateLabel })}
+            </span>
+          )}
+          {assignedBy && (
+            <span data-testid={`notification-assigned-by-${id}`}>
+              {intl.formatMessage(messages.notificationAssignedByLabel, { assignedBy })}
+            </span>
+          )}
+          <span
+            className="lw-notification-card__timestamp"
+            data-testid={`notification-created-date-${id}`}
+          >
+            {relativeTime}
+          </span>
+        </div>
+      </NotificationCardLink>
+    );
+  }
+
+  const sanitizedContent = DOMPurify.sanitize(content);
 
   return (
-    <Hyperlink
-      target="_blank"
-      className="d-flex mb-2 align-items-center text-decoration-none notification-post-link"
-      destination={contentUrl}
-      onClick={handleNotificationClick}
-      data-testid={`notification-${id}`}
-      showLaunchIcon={false}
-    >
-      <Icon
-        src={iconComponent}
-        className={`${iconClass} mr-4 notification-icon`}
-        data-testid={`notification-icon-${id}`}
+    <NotificationCardLink {...cardLinkProps}>
+      <div
+        className="lw-notification-card__legacy-content"
+        dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+        data-testid={`notification-content-${id}`}
       />
-      <div className="d-flex w-100" data-testid="notification-contents">
-        <div className="d-flex align-items-center w-100">
-          <div className="py-2 w-100 px-0 cursor-pointer">
-            <span
-              className="line-height-24 text-gray-700 mb-2 notification-item-content overflow-hidden content"
-
-              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
-              data-testid={`notification-content-${id}`}
-            />
-            <div className="py-0 d-flex">
-              <span className="x-small text-gray-500 line-height-20">
-                <span data-testid={`notification-course-${id}`}>{courseName}
-                </span>
-                <span className="text-light-700 px-1.5">{intl.formatMessage(messages.fullStop)}</span>
-                <span data-testid={`notification-created-date-${id}`}> {timeago.format(createdAt, 'time-locale')}
-                </span>
-              </span>
-            </div>
-          </div>
-          {!lastRead && (
-            <div className="d-flex py-1.5 px-1.5 ml-2 cursor-pointer">
-              <span className="bg-brand-500 rounded unread" data-testid={`unread-notification-${id}`} />
-            </div>
-          )}
-        </div>
+      <div className="lw-notification-card__legacy-footer">
+        {courseName && (
+          <span data-testid={`notification-course-${id}`}>{courseName}</span>
+        )}
+        {courseName && (
+          <span className="px-1">{intl.formatMessage(messages.fullStop)}</span>
+        )}
+        <span data-testid={`notification-created-date-${id}`}>{relativeTime}</span>
+        {isUnread && (
+          <span
+            className="lw-notification-card__unread-dot ms-2 d-inline-block"
+            data-testid={`unread-notification-${id}`}
+            aria-label={intl.formatMessage(messages.notificationUnreadLabel)}
+          />
+        )}
       </div>
-    </Hyperlink>
+    </NotificationCardLink>
   );
 };
 

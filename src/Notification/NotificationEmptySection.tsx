@@ -1,39 +1,30 @@
-import React, { useContext } from 'react';
+import React from 'react';
 
-import { useIntl } from '@openedx/frontend-base';
-import { Icon, IconButton } from '@openedx/paragon';
+import { useIntl } from '@edx/frontend-platform/i18n';
+import { Icon } from '@openedx/paragon';
 import { NotificationsNone } from '@openedx/paragon/icons';
 
-import NotificationPopoverContext from './context/notificationPopoverContext';
 import messages from './messages';
 
 const EmptyNotifications = () => {
   const intl = useIntl();
-  const { popoverHeaderRef, notificationRef } = useContext(NotificationPopoverContext);
 
   return (
     <div
-      className="d-flex flex-column justify-content-center align-items-center"
+      className="lw-notifications-drawer__empty"
       data-testid="notifications-empty-list"
-      style={{ height: `${(notificationRef?.current?.clientHeight ?? 0) - (popoverHeaderRef?.current?.clientHeight ?? 0)}px` }}
     >
-      <IconButton
-        isActive
-        alt={intl.formatMessage(messages.notificationBellIconAltMessage)}
+      <Icon
         src={NotificationsNone}
-        iconAs={Icon}
-        variant="light"
-        iconClassNames="text-primary-500"
-        className="ml-4 mr-1 notification-button notification-lg-bell-icon pl-2"
-        data-testid="notification-bell-icon"
+        className="lw-notifications-drawer__empty-icon"
+        data-testid="notification-empty-bell-icon"
+        screenReaderText={intl.formatMessage(messages.notificationBellIconAltMessage)}
       />
-      <div className="mx-auto mt-3.5 mb-3 lead notification-end-title line-height-24">
+      <div className="lw-notifications-drawer__empty-title">
         {intl.formatMessage(messages.noNotificationsYetMessage)}
       </div>
-      <div className="d-flex flex-row mx-auto text-gray-500">
-        <span className="small line-height-normal">
-          {intl.formatMessage(messages.noNotificationHelpMessage)}
-        </span>
+      <div className="lw-notifications-drawer__empty-help">
+        {intl.formatMessage(messages.noNotificationHelpMessage)}
       </div>
     </div>
   );

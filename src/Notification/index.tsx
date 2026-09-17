@@ -1,28 +1,35 @@
 import React, {
-  useCallback, useEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
+import ReactDOM from 'react-dom';
 
 import classNames from 'classnames';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
-import { getUrlByRouteRole, useIntl } from '@openedx/frontend-base';
-import {
-  Bubble, Hyperlink, Icon, IconButton, OverlayTrigger, Popover,
-} from '@openedx/paragon';
-import { NotificationsNone, Settings } from '@openedx/paragon/icons';
+import { useIntl } from '@edx/frontend-platform/i18n';
 
-import { useIsOnLargeScreen, useIsOnMediumScreen, NotificationAppData } from './data/hook';
+import { NotificationAppData, useMarkAllNotificationsRead } from './data/hook';
+import NotificationSections from './NotificationSections';
 import NotificationTour from './tours/NotificationTour';
-import NotificationPopoverContext from './context/notificationPopoverContext';
 import messages from './messages';
-import NotificationTabs from './NotificationTabs';
 import { notificationsContext, NotificationContextValue } from './context/notificationsContext';
+import notificationDrawerContext from './context/notificationDrawerContext';
+import { DEFAULT_NOTIFICATION_APP, DRAWER_CLOSE_MS, DRAWER_OPEN_MS } from './constants';
+import { getNotificationDrawerPortalTarget } from './drawerPortalRoot';
+import { getDrawerBackdropStyle, getDrawerPanelStyle } from './drawerStyles';
+import { NotificationCloseIcon, NotificationHeadingIcon } from './icons';
+import GoogleSansFlexFonts from './GoogleSansFlexFonts';
+import { resolveDefaultAppName } from './utils';
+import { useBackdropScrollContainment } from './useBackdropScrollContainment';
+import { useDrawerEscapeKey } from './useDrawerEscapeKey';
 
 import './notification.scss';
 
 interface NotificationsProps {
-  notificationAppData?: NotificationAppData;
-  margins?: string;
+  notificationAppData?: NotificationAppData,
+  margins?: string,
+  onDrawerMountedChange?: (mounted: boolean) => void,
+  onDrawerOpenChange?: (open: boolean) => void,
 }
 
 const defaultNotificationAppData: NotificationAppData = {
@@ -37,173 +44,255 @@ const defaultNotificationAppData: NotificationAppData = {
 const Notifications: React.FC<NotificationsProps> = ({
   notificationAppData = defaultNotificationAppData,
   margins = 'mx-1.5',
+  onDrawerMountedChange,
+  onDrawerOpenChange,
 }) => {
   const intl = useIntl();
-  const popoverRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const backdropRef = useRef<HTMLButtonElement>(null);
   const [searchParams] = useSearchParams();
-  const buttonRef = useRef<HTMLDivElement>(null);
-  const [enableNotificationTray, setEnableNotificationTray] = useState(false);
-  const [appName, setAppName] = useState('discussion');
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const bellWrapperRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldAnimateOpenRef = useRef(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isDrawerMounted, setIsDrawerMounted] = useState(false);
+  const [appName, setAppName] = useState(DEFAULT_NOTIFICATION_APP);
   const [openFlag, setOpenFlag] = useState(false);
-  const isOnMediumScreen = useIsOnMediumScreen();
-  const isOnLargeScreen = useIsOnLargeScreen();
 
-  const { tabsCount } = notificationAppData;
+  const { tabsCount, appsId } = notificationAppData;
+  const { mutateAsync: markAllAsRead } = useMarkAllNotificationsRead();
+  const unreadCount = tabsCount?.count ?? 0;
+
+  const openDrawer = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsDrawerOpen(false);
+    setIsDrawerMounted(true);
+    shouldAnimateOpenRef.current = true;
+  }, []);
+
+  const clearDrawerAnimationInlineStyles = useCallback(() => {
+    const animatedProps = [
+      'transform',
+      'visibility',
+      'opacity',
+      'pointer-events',
+      'transition-property',
+      'transition-timing-function',
+    ];
+    animatedProps.forEach((prop) => {
+      backdropRef.current?.style.removeProperty(prop);
+      drawerRef.current?.style.removeProperty(prop);
+    });
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setIsDrawerOpen(false);
+    backdropRef.current?.style.setProperty('transition-duration', `${DRAWER_CLOSE_MS}ms`);
+    drawerRef.current?.style.setProperty('transition-duration', `${DRAWER_CLOSE_MS}ms`);
+    closeTimerRef.current = setTimeout(() => {
+      setIsDrawerMounted(false);
+      closeTimerRef.current = null;
+      clearDrawerAnimationInlineStyles();
+      backdropRef.current?.style.removeProperty('transition-duration');
+      drawerRef.current?.style.removeProperty('transition-duration');
+      bellWrapperRef.current?.querySelector('button')?.focus();
+    }, DRAWER_CLOSE_MS);
+  }, [clearDrawerAnimationInlineStyles]);
 
   const toggleNotificationTray = useCallback(() => {
-    setEnableNotificationTray(prevState => !prevState);
-  }, []);
-
-  const handleClickOutsideNotificationTray = useCallback((event: MouseEvent) => {
-    const target = event.target as Node;
-    if (!popoverRef.current?.contains(target) && !buttonRef.current?.contains(target)) {
-      setEnableNotificationTray(false);
+    if (isDrawerOpen || isDrawerMounted) {
+      closeDrawer();
+    } else {
+      openDrawer();
     }
-  }, []);
+  }, [closeDrawer, isDrawerMounted, isDrawerOpen, openDrawer]);
 
-  useEffect(() => {
-    if (openFlag || Object.keys(tabsCount).length === 0) {
-      return;
+  useLayoutEffect(() => {
+    if (!isDrawerMounted || isDrawerOpen || !shouldAnimateOpenRef.current) {
+      return undefined;
     }
-    setAppName(searchParams.get('app') || 'discussion');
-    setEnableNotificationTray(searchParams.get('showNotifications') === 'true');
-    setOpenFlag(true);
-  }, [tabsCount, openFlag, searchParams]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsHeaderVisible(window.scrollY < 100);
-    };
+    shouldAnimateOpenRef.current = false;
+    clearDrawerAnimationInlineStyles();
 
-    window.addEventListener('scroll', handleScroll);
-    document.addEventListener('mousedown', handleClickOutsideNotificationTray);
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setIsDrawerOpen(true);
+      });
+    });
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutsideNotificationTray);
-      window.removeEventListener('scroll', handleScroll);
-      setAppName('discussion');
+      cancelAnimationFrame(raf1);
+      if (raf2) {
+        cancelAnimationFrame(raf2);
+      }
     };
-  }, [handleClickOutsideNotificationTray]);
+  }, [clearDrawerAnimationInlineStyles, isDrawerMounted, isDrawerOpen]);
 
-  const notificationRefs = useMemo(
-    () => ({ popoverHeaderRef: headerRef, notificationRef: popoverRef }),
-    [headerRef, popoverRef],
-  );
+  useEffect(() => {
+    if (openFlag || appsId.length === 0) {
+      return;
+    }
+    const requestedApp = searchParams.get('app');
+    setAppName(resolveDefaultAppName(appsId, requestedApp));
+    if (searchParams.get('showNotifications') === 'true') {
+      openDrawer();
+    }
+    setOpenFlag(true);
+  }, [appsId, openDrawer, openFlag, searchParams]);
+
+  useEffect(() => () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+  }, []);
+
+  useEffect(() => {
+    onDrawerMountedChange?.(isDrawerMounted);
+  }, [isDrawerMounted, onDrawerMountedChange]);
+
+  useLayoutEffect(() => {
+    if (isDrawerMounted) {
+      onDrawerOpenChange?.(isDrawerOpen);
+    }
+  }, [isDrawerOpen, isDrawerMounted, onDrawerOpenChange]);
+
+  useEffect(() => {
+    if (isDrawerOpen) {
+      closeButtonRef.current?.focus({ preventScroll: true });
+    }
+  }, [isDrawerOpen]);
+
+  // Match LMS notifications.js: only set transition-duration imperatively.
+  // Transform/opacity/visibility are driven exclusively by the --open CSS class
+  // so close animations are not snapped by React inline style updates.
+  useEffect(() => {
+    const duration = isDrawerOpen ? `${DRAWER_OPEN_MS}ms` : `${DRAWER_CLOSE_MS}ms`;
+    backdropRef.current?.style.setProperty('transition-duration', duration);
+    drawerRef.current?.style.setProperty('transition-duration', duration);
+  }, [isDrawerOpen]);
+
+  useBackdropScrollContainment(backdropRef, isDrawerOpen);
+  useDrawerEscapeKey(isDrawerOpen, closeDrawer);
 
   const handleActiveTab = useCallback((selectedAppName: string) => {
     setAppName(selectedAppName);
   }, []);
+
+  const handleMarkAllAsRead = useCallback(() => {
+    if (!appName) {
+      return;
+    }
+    markAllAsRead(appName);
+  }, [appName, markAllAsRead]);
 
   const notificationContextValue = useMemo<NotificationContextValue>(() => ({
     appName,
     handleActiveTab,
   }), [appName, handleActiveTab]);
 
-  const accountSettingsUrl = getUrlByRouteRole('org.openedx.frontend.role.account');
-  const settingsDestination = accountSettingsUrl
-    ? `${accountSettingsUrl.replace(/\/$/, '')}/#notifications`
-    : '';
-  const isInternalRoute = !!accountSettingsUrl && !/^[a-z][a-z0-9+.-]*:/i.test(accountSettingsUrl);
-  const settingsIcon = (
-    <Icon
-      src={Settings}
-      className="text-primary-500 icon-size-20"
-      data-testid="setting-icon"
-      screenReaderText="preferences settings icon"
-    />
-  );
+  const drawerContextValue = useMemo(() => ({
+    drawerHeaderRef: headerRef,
+    drawerRef,
+  }), []);
+
+  const drawerPortal = isDrawerMounted && typeof document !== 'undefined'
+    ? ReactDOM.createPortal(
+        <>
+          <button
+            ref={backdropRef}
+            type="button"
+            className={classNames('lw-notifications-drawer__backdrop', {
+              'lw-notifications-drawer__backdrop--open': isDrawerOpen,
+            })}
+            style={getDrawerBackdropStyle()}
+            aria-hidden="true"
+            tabIndex={-1}
+            data-testid="notification-drawer-backdrop"
+            onClick={closeDrawer}
+          />
+          <div
+            ref={drawerRef}
+            id="lw-notifications-drawer"
+            className={classNames('lw-notifications-drawer', {
+              'lw-notifications-drawer--open': isDrawerOpen,
+            })}
+            style={getDrawerPanelStyle()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lw-notifications-drawer-title"
+            data-testid="notification-tray"
+          >
+            <div ref={headerRef} className="lw-notifications-drawer__header">
+              <div className="lw-notifications-drawer__heading">
+                <NotificationHeadingIcon className="lw-notifications-drawer__heading-icon" />
+                <h2 id="lw-notifications-drawer-title" className="lw-notifications-drawer__title">
+                  {intl.formatMessage(messages.notificationTitle)}
+                </h2>
+                <span
+                  className={classNames('lw-notifications-drawer__count-badge', {
+                    'lw-notifications-drawer__count-badge--wide': unreadCount >= 10,
+                  })}
+                  data-testid="notification-drawer-count"
+                >
+                  {unreadCount >= 100 ? '99+' : unreadCount}
+                </span>
+              </div>
+              <div className="lw-notifications-drawer__header-actions">
+                <button
+                  type="button"
+                  className="lw-notifications-drawer__mark-all"
+                  onClick={handleMarkAllAsRead}
+                  data-testid="mark-all-read"
+                >
+                  {intl.formatMessage(messages.notificationMarkAsRead)}
+                </button>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
+                  className="lw-notifications-drawer__close"
+                  onClick={closeDrawer}
+                  aria-label={intl.formatMessage(messages.notificationCloseButtonAltMessage)}
+                  data-testid="notification-drawer-close"
+                >
+                  <NotificationCloseIcon />
+                </button>
+              </div>
+            </div>
+            <div className="lw-notifications-drawer__list">
+              <notificationDrawerContext.Provider value={drawerContextValue}>
+                <NotificationSections />
+              </notificationDrawerContext.Provider>
+            </div>
+          </div>
+        </>,
+        getNotificationDrawerPortalTarget(),
+      )
+    : null;
 
   return (
     <notificationsContext.Provider value={notificationContextValue}>
-      <OverlayTrigger
-        trigger="click"
-        key="bottom"
-        placement="bottom"
-        show={enableNotificationTray}
-        overlay={(
-          <Popover
-            id="notificationTray"
-            data-testid="notification-tray"
-            className={classNames('overflow-auto rounded-0 border-0 position-fixed ml-1.5 mt-2', {
-              'w-100': !isOnMediumScreen && !isOnLargeScreen,
-              'medium-screen': isOnMediumScreen,
-              'large-screen': isOnLargeScreen,
-              'popover-margin-top height-100vh': !isHeaderVisible,
-              'height-91vh ': isHeaderVisible,
-            })}
-          >
-            <div ref={popoverRef} className="height-inherit">
-              <div ref={headerRef}>
-                <Popover.Title
-                  as="h1"
-                  className={`d-flex justify-content-between px-4 pt-4 pb-2.5 m-0 border-0 text-primary-500 zIndex-2 font-size-18
-                  line-height-24 bg-white position-sticky`}
-                >
-                  {intl.formatMessage(messages.notificationTitle)}
-                  {isInternalRoute ? (
-                    <Link to={settingsDestination}>{settingsIcon}</Link>
-                  ) : (
-                    <Hyperlink
-                      destination={settingsDestination}
-                      target="_blank"
-                      showLaunchIcon={false}
-                    >
-                      {settingsIcon}
-                    </Hyperlink>
-                  )}
-                </Popover.Title>
-              </div>
-              <Popover.Content className="notification-content p-0">
-                <NotificationPopoverContext.Provider value={notificationRefs}>
-                  <NotificationTabs notificationAppData={notificationAppData} />
-                </NotificationPopoverContext.Provider>
-              </Popover.Content>
-            </div>
-          </Popover>
-        )}
-      >
-        <div ref={buttonRef} id="notificationIcon" className={`${margins}`}>
-          <IconButton
-            isActive={enableNotificationTray}
-            alt={intl.formatMessage(messages.notificationBellIconAltMessage)}
-            onClick={toggleNotificationTray}
-            src={NotificationsNone}
-            iconAs={Icon}
-            variant="light"
-            iconClassNames="text-primary-500"
-            size="inline"
-            className="notification-button"
-            data-testid="notification-bell-icon"
-          />
-          {tabsCount?.count > 0 && (
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={toggleNotificationTray}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  toggleNotificationTray();
-                }
-              }}
-              className="d-inline-block"
-            >
-              <Bubble
-                variant="error"
-                data-testid="notification-count"
-                className={classNames('notification-badge zindex-1 cursor-pointer p-1', {
-                  'notification-badge-unrounded mt-1': tabsCount.count >= 10,
-                  'notification-badge-rounded': tabsCount.count < 10,
-                })}
-              >
-                {tabsCount.count >= 100 ? <div className="d-flex">99<p className="mb-0 plus-icon">+</p></div>
-                  : tabsCount.count}
-              </Bubble>
-            </div>
-          )}
-        </div>
-      </OverlayTrigger>
+      <GoogleSansFlexFonts />
+      <div ref={bellWrapperRef} className={classNames('lw-notification-btn-wrapper', margins)}>
+        <button
+          type="button"
+          className="lw-notification-btn"
+          onClick={toggleNotificationTray}
+          aria-label={intl.formatMessage(messages.notificationBellIconAltMessage)}
+          aria-expanded={isDrawerOpen}
+          aria-controls={isDrawerMounted ? 'lw-notifications-drawer' : undefined}
+          data-testid="notification-bell-icon"
+        >
+          <NotificationHeadingIcon />
+        </button>
+      </div>
+      {drawerPortal}
       <NotificationTour />
     </notificationsContext.Provider>
   );

@@ -1,16 +1,16 @@
 import {
   EnvironmentTypes,
   SiteConfig,
-  footerApp,
-  headerApp,
-  shellApp,
 } from '@openedx/frontend-base';
 
-import { notificationsApp } from './src';
+import notificationsApp from './src/app';
 import { devApp } from './dev';
 
-import '@openedx/frontend-base/shell/style';
-
+/**
+ * Standalone plugin playground. Do not load frontend-base headerApp/footerApp —
+ * this package is a tray widget, not a site, and headerApp pulls
+ * @edx/frontend-component-header (not a dependency here).
+ */
 const siteConfig: SiteConfig = {
   siteId: 'notifications-dev',
   siteName: 'Notifications Dev',
@@ -22,9 +22,6 @@ const siteConfig: SiteConfig = {
 
   environment: EnvironmentTypes.DEVELOPMENT,
   apps: [
-    shellApp,
-    headerApp,
-    footerApp,
     notificationsApp,
     devApp,
   ],

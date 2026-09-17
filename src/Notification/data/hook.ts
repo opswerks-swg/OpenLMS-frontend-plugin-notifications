@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useContext, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   keepPreviousData,
@@ -9,10 +9,11 @@ import {
   type InfiniteData,
 } from '@tanstack/react-query';
 
-import { camelCaseObject, useAuthenticatedUser } from '@openedx/frontend-base';
-import { breakpoints, useWindowSize } from '@openedx/paragon';
+import { camelCaseObject } from '@edx/frontend-platform';
+import { AppContext } from '@edx/frontend-platform/react';
 
 import {
+  getCourseTitles,
   getNotificationCounts,
   getNotificationsList,
   markAllNotificationRead,
@@ -20,32 +21,33 @@ import {
   markNotificationSeen,
 } from './api';
 import type { NotificationItem, Pagination, TabsCount } from '../context/notificationsContext';
+import { extractCourseIdFromUrl, humanizeCourseKey, isCourseKey } from '../utils';
 
 export interface NotificationAppData {
-  tabsCount: TabsCount;
-  appsId: string[];
-  apps: Record<string, string[]>;
-  showNotificationsTray: boolean;
-  notificationExpiryDays: number;
-  isNewNotificationViewEnabled: boolean;
+  tabsCount: TabsCount,
+  appsId: string[],
+  apps: Record<string, string[]>,
+  showNotificationsTray: boolean,
+  notificationExpiryDays: number,
+  isNewNotificationViewEnabled: boolean,
 }
 
 interface CountsResponseCamel {
-  count: number;
-  countByAppName: Record<string, number>;
-  showNotificationsTray: boolean;
-  notificationExpiryDays?: number;
-  isNewNotificationViewEnabled: boolean;
+  count: number,
+  countByAppName: Record<string, number>,
+  showNotificationsTray: boolean,
+  notificationExpiryDays?: number,
+  isNewNotificationViewEnabled: boolean,
 }
 
 interface ListPageCamel {
-  next: string | null;
-  previous: string | null;
-  count: number;
-  numPages: number;
-  currentPage: number;
-  start: number;
-  results: NotificationItem[];
+  next: string | null,
+  previous: string | null,
+  count: number,
+  numPages: number,
+  currentPage: number,
+  start: number,
+  results: NotificationItem[],
 }
 
 export const QK = {
@@ -55,21 +57,6 @@ export const QK = {
   listRoot: () => [...QK.all, 'list'] as const,
   tours: () => [...QK.all, 'tours'] as const,
 };
-
-export function useIsOnMediumScreen(): boolean {
-  const windowSize = useWindowSize();
-  const width = windowSize.width ?? 0;
-  const largeMax = breakpoints.large?.maxWidth ?? Infinity;
-  const mediumMin = breakpoints.medium?.minWidth ?? 0;
-  return largeMax > width && width >= mediumMin;
-}
-
-export function useIsOnLargeScreen(): boolean {
-  const windowSize = useWindowSize();
-  const width = windowSize.width ?? 0;
-  const xlMin = breakpoints.extraLarge?.minWidth ?? Infinity;
-  return width >= xlMin;
-}
 
 function normalizeAppData(input: CountsResponseCamel): NotificationAppData {
   const { countByAppName, count, ...rest } = input;
@@ -89,7 +76,7 @@ function normalizeAppData(input: CountsResponseCamel): NotificationAppData {
 }
 
 export function useAppNotifications() {
-  const authenticatedUser = useAuthenticatedUser();
+  const { authenticatedUser } = useContext(AppContext);
   const location = useLocation();
   const queryClient = useQueryClient();
 
@@ -115,18 +102,17 @@ export function useAppNotifications() {
 
   return {
     notificationAppData: query.data,
-    isNewNotificationView: query.data?.isNewNotificationViewEnabled ?? false,
   };
 }
 
 export interface UseNotificationListResult {
-  notifications: NotificationItem[];
-  pagination: Pagination;
-  hasMorePages: boolean;
-  isPending: boolean;
-  isFetching: boolean;
-  isError: boolean;
-  loadMore: () => void;
+  notifications: NotificationItem[],
+  pagination: Pagination,
+  hasMorePages: boolean,
+  isPending: boolean,
+  isFetching: boolean,
+  isError: boolean,
+  loadMore: () => void,
 }
 
 export function useNotificationList(appName: string): UseNotificationListResult {
@@ -166,6 +152,70 @@ export function useNotificationList(appName: string): UseNotificationListResult 
       query.fetchNextPage();
     },
   };
+}
+
+function collectCourseIdsForTitleResolution(notifications: NotificationItem[]): string[] {
+  const courseIds = new Set<string>();
+
+  notifications.forEach((notification) => {
+    if (notification.notificationType !== 'course_assigned') {
+      return;
+    }
+
+    const context = notification.contentContext;
+    const candidates = [context?.courseTitle, context?.courseName].filter(Boolean) as string[];
+    const needsResolution = candidates.some(isCourseKey) || !!extractCourseIdFromUrl(notification.contentUrl);
+
+    if (!needsResolution) {
+      return;
+    }
+
+    const courseIdFromUrl = extractCourseIdFromUrl(notification.contentUrl);
+    if (courseIdFromUrl) {
+      courseIds.add(courseIdFromUrl);
+    }
+
+    candidates.filter(isCourseKey).forEach((courseId) => {
+      courseIds.add(courseId);
+    });
+  });
+
+  return Array.from(courseIds);
+}
+
+interface CourseTitleResultCamel {
+  courseId: string,
+  courseTitle: string,
+}
+
+export function useCourseTitleMap(notifications: NotificationItem[]): Record<string, string> {
+  const courseIds = useMemo(
+    () => collectCourseIdsForTitleResolution(notifications),
+    [notifications],
+  );
+
+  const query = useQuery({
+    queryKey: [...QK.all, 'courseTitles', courseIds.join('|')],
+    queryFn: async () => {
+      const data = await getCourseTitles(courseIds);
+      return camelCaseObject(data) as { results: CourseTitleResultCamel[] };
+    },
+    enabled: courseIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  return useMemo(() => {
+    const titleMap: Record<string, string> = {};
+    courseIds.forEach((courseId) => {
+      titleMap[courseId] = humanizeCourseKey(courseId);
+    });
+    query.data?.results?.forEach(({ courseId, courseTitle }) => {
+      if (courseTitle && !isCourseKey(courseTitle)) {
+        titleMap[courseId] = courseTitle;
+      }
+    });
+    return titleMap;
+  }, [courseIds, query.data]);
 }
 
 export function useMarkNotificationSeen() {
@@ -228,15 +278,4 @@ export function useMarkAllNotificationsRead() {
       queryClient.invalidateQueries({ queryKey: QK.appData() });
     },
   });
-}
-
-export function useNotification() {
-  const markSeen = useMarkNotificationSeen();
-  const markRead = useMarkNotificationRead();
-  const markAllRead = useMarkAllNotificationsRead();
-  return {
-    markNotificationsAsSeen: markSeen.mutateAsync,
-    markNotificationsAsRead: markRead.mutateAsync,
-    markAllNotificationsAsRead: markAllRead.mutateAsync,
-  };
 }

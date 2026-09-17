@@ -9,4 +9,17 @@ module.exports = createLintConfig(
       'site.config.*',
     ],
   },
+  {
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: [
+            'babel.config.js',
+            'eslint.config.js',
+            'jest.config.js',
+          ],
+        },
+      },
+    },
+  },
 );
