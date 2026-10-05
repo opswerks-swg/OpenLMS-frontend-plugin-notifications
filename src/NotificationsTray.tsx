@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useIntl } from '@edx/frontend-platform/i18n';
 
 import Notifications from './Notification';
 import { useAppNotifications } from './Notification/data/hook';
+import { NotificationHeadingIcon } from './Notification/icons';
+import messages from './Notification/messages';
 
 interface NotificationsTrayProps {
   margins?: string,
@@ -10,10 +13,30 @@ interface NotificationsTrayProps {
   onDrawerOpenChange?: (open: boolean) => void,
 }
 
-const NotificationsTrayInner: React.FC<NotificationsTrayProps> = (props) => {
+// Bell shown while the tray is unavailable (loading, or the notifications API
+// is not deployed yet). Same markup/classes as the live bell so the header
+// layout does not shift, but clicking it does nothing.
+const StaticBell: React.FC<{ margins?: string }> = ({ margins }) => {
+  const intl = useIntl();
+  return (
+    <div className={`lw-notification-btn-wrapper${margins ? ` ${margins}` : ''}`}>
+      <button
+        type="button"
+        className="lw-notification-btn"
+        aria-label={intl.formatMessage(messages.notificationBellIconAltMessage)}
+        aria-disabled="true"
+        data-testid="notification-bell-icon-static"
+      >
+        <NotificationHeadingIcon />
+      </button>
+    </div>
+  );
+};
+
+export const NotificationsTrayInner: React.FC<NotificationsTrayProps> = (props) => {
   const { notificationAppData } = useAppNotifications();
   if (!notificationAppData?.showNotificationsTray) {
-    return null;
+    return <StaticBell margins={props.margins} />;
   }
   return (
     <Notifications notificationAppData={notificationAppData} {...props} />

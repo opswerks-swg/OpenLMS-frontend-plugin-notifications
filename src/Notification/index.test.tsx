@@ -166,15 +166,16 @@ describe('Notification drawer test cases.', () => {
     });
   });
 
-  it('Successfully hides bell icon when showNotificationsTray is false.', async () => {
+  it('Shows an inert bell when showNotificationsTray is false.', async () => {
     await setupMockNotificationCountResponse(45, false);
     await renderComponent();
 
-    await waitFor(() => {
-      const bellIcon = screen.queryByTestId('notification-bell-icon');
+    const staticBell = await screen.findByTestId('notification-bell-icon-static');
+    expect(screen.queryByTestId('notification-bell-icon')).not.toBeInTheDocument();
+    expect(staticBell).toHaveAttribute('aria-disabled', 'true');
 
-      expect(bellIcon).not.toBeInTheDocument();
-    });
+    fireEvent.click(staticBell);
+    expect(screen.queryByTestId('notification-tray')).not.toBeInTheDocument();
   });
 
   it('Successfully opens and closes the drawer from the bell icon.', async () => {
