@@ -7,8 +7,7 @@ import { IntlProvider } from 'react-intl';
 import AppContext from '@edx/frontend-platform/react/AppContext';
 import { getConfig } from '@edx/frontend-platform';
 
-import Notifications from './index';
-import { useAppNotifications } from './data/hook';
+import { NotificationsTrayInner } from '../NotificationsTray';
 import { createTestQueryClient } from '../setupTest';
 
 export const TEST_AUTHENTICATED_USER = {
@@ -25,20 +24,10 @@ interface NotificationsFromQueryProps {
   onDrawerMountedChange?: (mounted: boolean) => void,
 }
 
+// Renders the real tray body (live drawer, or the inert bell when the tray is off).
 export const NotificationsFromQuery: React.FC<NotificationsFromQueryProps> = ({
   onDrawerMountedChange,
-}) => {
-  const { notificationAppData } = useAppNotifications();
-  if (!notificationAppData?.showNotificationsTray) {
-    return null;
-  }
-  return (
-    <Notifications
-      notificationAppData={notificationAppData}
-      onDrawerMountedChange={onDrawerMountedChange}
-    />
-  );
-};
+}) => <NotificationsTrayInner onDrawerMountedChange={onDrawerMountedChange} />;
 
 interface RenderWithProvidersOptions {
   route?: string,

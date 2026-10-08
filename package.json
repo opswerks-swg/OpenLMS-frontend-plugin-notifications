@@ -34,6 +34,7 @@
     "i18n_extract": "openedx formatjs extract",
     "lint": "openedx lint .",
     "lint:fix": "openedx lint --fix .",
+    "prepare": "npm run build",
     "prepack": "npm run clean && npm run build",
     "snapshot": "jest --updateSnapshot",
     "test": "jest --coverage --passWithNoTests",
