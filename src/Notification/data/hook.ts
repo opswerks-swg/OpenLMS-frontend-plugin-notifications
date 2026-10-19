@@ -20,6 +20,7 @@ import {
   markNotificationRead,
   markNotificationSeen,
 } from './api';
+import { COUNT_REFETCH_INTERVAL_MS } from '../constants';
 import type { NotificationItem, Pagination, TabsCount } from '../context/notificationsContext';
 import { extractCourseIdFromUrl, humanizeCourseKey, isCourseKey } from '../utils';
 
@@ -87,6 +88,9 @@ export function useAppNotifications() {
       return normalizeAppData(camelCaseObject(data) as CountsResponseCamel);
     },
     enabled: !!authenticatedUser,
+    // A learner who stays on one page still sees a new assignment's badge within a minute.
+    refetchInterval: COUNT_REFETCH_INTERVAL_MS,
+    refetchOnWindowFocus: true,
   });
 
   const didMount = useRef(false);

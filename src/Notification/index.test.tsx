@@ -123,6 +123,30 @@ describe('Notification drawer test cases.', () => {
     });
   });
 
+  it.each([
+    [3, '3', false],
+    [12, '12', true],
+    [150, '99+', true],
+  ])('Shows %i unread on the bell badge', async (count, label, wide) => {
+    await setupMockNotificationCountResponse(count);
+    await renderComponent();
+
+    const badge = await screen.findByTestId('notification-bell-count');
+    expect(badge).toHaveTextContent(label);
+    expect(badge.classList.contains('lw-notification-badge--wide')).toBe(wide);
+    expect(screen.getByTestId('notification-bell-icon'))
+      .toHaveAttribute('aria-label', `Notifications, ${count} unread`);
+  });
+
+  it('Hides the bell badge when nothing is unread', async () => {
+    await setupMockNotificationCountResponse(0);
+    await renderComponent();
+
+    const bellIcon = await screen.findByTestId('notification-bell-icon');
+    expect(screen.queryByTestId('notification-bell-count')).not.toBeInTheDocument();
+    expect(bellIcon).toHaveAttribute('aria-label', 'Notification bell icon');
+  });
+
   it('Renders course assigned notifications from the list API', async () => {
     const assignedNotification = Factory.build('courseAssignedNotification', null, {
       createdDate: new Date().toISOString(),

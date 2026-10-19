@@ -61,6 +61,11 @@ const messages = defineMessages({
     defaultMessage: 'Notification bell icon',
     description: 'Alt message for notification bell icon',
   },
+  notificationBellUnreadAltMessage: {
+    id: 'notification.bell.icon.unread.alt.message',
+    defaultMessage: 'Notifications, {count} unread',
+    description: 'Alt message for the notification bell when it shows an unread count badge',
+  },
   notificationCloseButtonAltMessage: {
     id: 'notification.close.button.alt.message',
     defaultMessage: 'Close notifications',

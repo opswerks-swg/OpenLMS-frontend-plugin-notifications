@@ -284,12 +284,25 @@ const Notifications: React.FC<NotificationsProps> = ({
           type="button"
           className="lw-notification-btn"
           onClick={toggleNotificationTray}
-          aria-label={intl.formatMessage(messages.notificationBellIconAltMessage)}
+          aria-label={unreadCount > 0
+            ? intl.formatMessage(messages.notificationBellUnreadAltMessage, { count: unreadCount })
+            : intl.formatMessage(messages.notificationBellIconAltMessage)}
           aria-expanded={isDrawerOpen}
           aria-controls={isDrawerMounted ? 'lw-notifications-drawer' : undefined}
           data-testid="notification-bell-icon"
         >
           <NotificationHeadingIcon />
+          {unreadCount > 0 && (
+            <span
+              className={classNames('lw-notification-badge', {
+                'lw-notification-badge--wide': unreadCount >= 10,
+              })}
+              aria-hidden="true"
+              data-testid="notification-bell-count"
+            >
+              {unreadCount >= 100 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
       </div>
       {drawerPortal}
