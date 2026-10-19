@@ -65,7 +65,8 @@ html.lw-scroll-locked body {
   font-size: 10px !important;
   font-weight: 600 !important;
   font-variant-numeric: lining-nums tabular-nums;
-  background: var(--pgn-color-primary-500, #059669) !important;
+  // Red unread count (Figma), same as the drawer's count badge.
+  background: #DC2626 !important;
   color: var(--pgn-color-white, #fff) !important;
   line-height: 20px !important;
   min-width: 20px;
