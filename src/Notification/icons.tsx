@@ -34,12 +34,52 @@ export const NewCourseAssignedIcon: React.FC = () => (
   >
     <path
       d="M10 4.99993C11.1401 4.34166 12.4335 3.99512 13.75 3.99512C15.0665 3.99512 16.3599 4.34166 17.5 4.99993V15.8333C16.3599 15.175 15.0665 14.8285 13.75 14.8285C12.4335 14.8285 11.1401 15.175 10 15.8333C8.85986 15.175 7.56652 14.8285 6.25 14.8285C4.93347 14.8285 3.64014 15.175 2.5 15.8333V4.99993C3.64014 4.34166 4.93347 3.99512 6.25 3.99512C7.56652 3.99512 8.85986 4.34166 10 4.99993ZM10 15.8333V4.99993"
-      stroke="#059669"
+      stroke="currentColor"
       strokeWidth="1.33"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
   </svg>
+);
+
+/** 24-unit line icons drawn at 20px; colour comes from the card variant (currentColor). */
+const CardIcon: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={20}
+    height={20}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="lw-notification-card__icon"
+    aria-hidden="true"
+  >
+    {children}
+  </svg>
+);
+
+export const DueReminderIcon: React.FC = () => (
+  <CardIcon>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" />
+  </CardIcon>
+);
+
+export const OverdueIcon: React.FC = () => (
+  <CardIcon>
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+    <path d="M12 9v4M12 17h.01" />
+  </CardIcon>
+);
+
+export const CompletedIcon: React.FC = () => (
+  <CardIcon>
+    <circle cx="12" cy="12" r="10" />
+    <path d="m9 12 2 2 4-4" />
+  </CardIcon>
 );
 
 export const NotificationCloseIcon: React.FC = () => (

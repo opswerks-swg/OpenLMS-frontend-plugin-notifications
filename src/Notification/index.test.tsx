@@ -332,3 +332,53 @@ describe('Notification drawer test cases.', () => {
     },
   );
 });
+
+describe('Course completed toast', () => {
+  const latestCompleted = {
+    id: 501,
+    course_title: 'Database Fundamentals',
+    content_url: 'https://apps.local.openedx.io/profile/u/learner',
+    created: new Date().toISOString(),
+  };
+
+  beforeEach(() => {
+    // The suite above stubs getNotificationCounts with jest.spyOn; clearAllMocks doesn't undo it.
+    jest.restoreAllMocks();
+    initializeMockApp({ authenticatedUser: TEST_AUTHENTICATED_USER });
+    axiosMock = new MockAdapter(getAuthenticatedHttpClient());
+    Factory.resetAll();
+    window.localStorage.clear();
+  });
+
+  function mockCounts(latest: typeof latestCompleted | null) {
+    axiosMock.onGet(notificationCountsApiUrl).reply(200, Factory.build('notificationsCount', {
+      count: 1,
+      showNotificationsTray: true,
+      latest_completed: latest,
+    }));
+  }
+
+  it('congratulates the learner once per completion', async () => {
+    mockCounts(latestCompleted);
+    const { unmount } = renderWithProviders(<NotificationsFromQuery />);
+
+    expect(await screen.findByText('Congratulations! You have completed Database Fundamentals'))
+      .toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View' }))
+      .toHaveAttribute('href', latestCompleted.content_url);
+
+    // The header remounts on every MFE navigation; the same completion is not announced again.
+    unmount();
+    renderWithProviders(<NotificationsFromQuery />);
+    await screen.findByTestId('notification-bell-icon');
+    expect(screen.queryByText('Congratulations! You have completed Database Fundamentals'))
+      .not.toBeInTheDocument();
+  });
+
+  it('shows no toast without a recent completion', async () => {
+    mockCounts(null);
+    renderWithProviders(<NotificationsFromQuery />);
+    await screen.findByTestId('notification-bell-icon');
+    expect(screen.queryByText(/Congratulations!/)).not.toBeInTheDocument();
+  });
+});

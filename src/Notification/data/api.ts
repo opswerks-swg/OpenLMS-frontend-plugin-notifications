@@ -1,12 +1,21 @@
 import { getConfig, snakeCaseObject } from '@edx/frontend-platform';
 import { getAuthenticatedHttpClient } from '@edx/frontend-platform/auth';
 
+/** Newest unread course_completed of the last day; the completion toast announces it. */
+export interface LatestCompletedRaw {
+  id: number,
+  course_title: string,
+  content_url: string,
+  created: string,
+}
+
 export interface NotificationCountsResponse {
   count: number,
   count_by_app_name: Record<string, number>,
   show_notifications_tray: boolean,
   notification_expiry_days?: number,
   is_new_notification_view_enabled: boolean,
+  latest_completed?: LatestCompletedRaw | null,
 }
 
 export interface NotificationRaw {
@@ -20,6 +29,12 @@ export interface NotificationRaw {
     course_url?: string,
     due_date?: string,
     assigned_by?: string,
+    provider?: string,
+    days_until_due?: number,
+    days_overdue?: number,
+    badge_name?: string,
+    has_certificate?: boolean,
+    profile_url?: string,
   },
   created: string,
   last_read?: string | null,

@@ -11,6 +11,7 @@ import { useIntl } from '@edx/frontend-platform/i18n';
 import { NotificationAppData, useMarkAllNotificationsRead } from './data/hook';
 import NotificationSections from './NotificationSections';
 import NotificationTour from './tours/NotificationTour';
+import CompletionToast from './CompletionToast';
 import messages from './messages';
 import { notificationsContext, NotificationContextValue } from './context/notificationsContext';
 import notificationDrawerContext from './context/notificationDrawerContext';
@@ -307,6 +308,7 @@ const Notifications: React.FC<NotificationsProps> = ({
       </div>
       {drawerPortal}
       <NotificationTour />
+      <CompletionToast latestCompleted={notificationAppData.latestCompleted} />
     </notificationsContext.Provider>
   );
 };

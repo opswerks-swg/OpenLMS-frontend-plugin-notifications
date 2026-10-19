@@ -302,7 +302,7 @@ html.lw-scroll-locked body {
   color: inherit;
   transition: background-color 150ms ease;
 
-  &:not(.lw-notification-card--assigned) {
+  &:not(.lw-notification-card--structured) {
     margin-bottom: 0.5rem;
     padding: 1rem;
     border: 1px solid #e5e7eb;
@@ -323,7 +323,13 @@ html.lw-scroll-locked body {
   }
 }
 
-.lw-notification-card--assigned {
+// Structured cards (notificationTypes.ts). Each variant sets the accent bar, tint and icon
+// colours from the design; values are read off the mock-up, swap in Figma tokens when known.
+.lw-notification-card--structured {
+  --lw-card-accent: #10B981;
+  --lw-card-bg: #fff;
+  --lw-card-icon: #059669;
+
   display: flex;
   flex-direction: row;
   align-items: stretch;
@@ -338,16 +344,21 @@ html.lw-scroll-locked body {
   border-bottom-right-radius: 12px;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  background-color: #fff;
+  background-color: var(--lw-card-bg);
   overflow: hidden;
   text-decoration: none;
   color: inherit;
 
   &:hover,
   &:focus {
-    background-color: #fff;
+    background-color: var(--lw-card-bg);
     text-decoration: none;
     color: inherit;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--lw-card-accent);
+    outline-offset: -2px;
   }
 
   .lw-notification-card__accent {
@@ -355,10 +366,47 @@ html.lw-scroll-locked body {
     width: 4px;
     min-height: 179px;
     align-self: stretch;
-    background-color: #10B981;
+    background-color: var(--lw-card-accent);
     border-radius: 12px;
   }
 
+  .lw-notification-card__icon {
+    color: var(--lw-card-icon);
+  }
+
+  .lw-notification-card__unread-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #0B2E59;
+  }
+
+  .lw-notification-card__award {
+    color: #065F46 !important;
+    font-weight: 500 !important;
+  }
+}
+
+.lw-notification-card--reminder {
+  --lw-card-accent: #F59E0B;
+  --lw-card-bg: #FFFBEB;
+  --lw-card-icon: #D97706;
+}
+
+// Visually distinct warning (spec): orange bar, warm tint, warning icon.
+.lw-notification-card--overdue {
+  --lw-card-accent: #F97316;
+  --lw-card-bg: #FFF7ED;
+  --lw-card-icon: #EA580C;
+}
+
+.lw-notification-card--completed {
+  --lw-card-accent: #10B981;
+  --lw-card-bg: #ECFDF5;
+  --lw-card-icon: #059669;
+}
+
+// Layout and type shared by every structured variant.
+.lw-notification-card--structured {
   .lw-notification-card__content {
     flex: 1;
     display: flex;

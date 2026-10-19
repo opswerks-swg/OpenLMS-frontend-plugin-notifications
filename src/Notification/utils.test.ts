@@ -3,10 +3,10 @@ import {
   formatDueDate,
   getCourseTitle,
   humanizeCourseKey,
-  isCourseAssignedNotification,
   isCourseKey,
   resolveDefaultAppName,
 } from './utils';
+import { getStructuredType, isStructuredNotification } from './notificationTypes';
 
 describe('Notification utils', () => {
   it('prefers assignments as the default app when available', () => {
@@ -52,8 +52,12 @@ describe('Notification utils', () => {
     expect(formatDueDate(undefined, 'en-US')).toBeNull();
   });
 
-  it('identifies course assigned notifications', () => {
-    expect(isCourseAssignedNotification('course_assigned')).toBe(true);
-    expect(isCourseAssignedNotification('new_comment')).toBe(false);
+  it('identifies the structured (assignment lifecycle) notification types', () => {
+    expect(getStructuredType('course_assigned')?.variant).toBe('assigned');
+    expect(getStructuredType('course_due_reminder')?.variant).toBe('reminder');
+    expect(getStructuredType('course_overdue')?.variant).toBe('overdue');
+    expect(getStructuredType('course_completed')?.variant).toBe('completed');
+    expect(isStructuredNotification('new_comment')).toBe(false);
+    expect(isStructuredNotification(undefined)).toBe(false);
   });
 });

@@ -138,10 +138,6 @@ export function formatDueDate(
   }).format(parsed);
 }
 
-export function isCourseAssignedNotification(type?: string): boolean {
-  return type === 'course_assigned';
-}
-
 /**
  * Returns the URL when it uses an allowed protocol; otherwise null.
  * Prevents javascript: and other unsafe schemes in notification links.
