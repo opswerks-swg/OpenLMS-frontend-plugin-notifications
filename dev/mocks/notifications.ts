@@ -1,14 +1,12 @@
 import type MockAdapter from 'axios-mock-adapter';
 
+// Snake-case content_context as the LMS sends it (course_title, due_date, days_until_due, ...).
+type SeedContext = Record<string, string | number | boolean | undefined>;
+
 interface NotificationSeed {
   notification_type: string,
   content: string,
-  content_context?: {
-    course_name?: string,
-    course_title?: string,
-    due_date?: string,
-    assigned_by?: string,
-  },
+  content_context?: SeedContext,
   unseen?: boolean,
 }
 
@@ -18,12 +16,7 @@ interface StoredNotification {
   notification_type: string,
   content: string,
   content_url: string,
-  content_context: {
-    course_name: string,
-    course_title?: string,
-    due_date?: string,
-    assigned_by?: string,
-  },
+  content_context: SeedContext & { course_name: string },
   created: string,
   last_read: string | null,
   last_seen: string | null,
@@ -35,10 +28,44 @@ const seedsByApp: Record<string, NotificationSeed[]> = {
       notification_type: 'course_assigned',
       content: 'You have been assigned a new course.',
       content_context: {
-        course_name: 'Supply Chain Analytics',
-        course_title: 'Supply Chain Analytics',
-        due_date: '2026-10-15T00:00:00Z',
+        course_name: 'Introduction to React',
+        course_title: 'Introduction to React',
+        due_date: '2026-05-01',
         assigned_by: 'Jane Instructor',
+        provider: 'SSED',
+      },
+      unseen: true,
+    },
+    {
+      notification_type: 'course_due_reminder',
+      content: '<p><strong>Figma Fundamentals</strong> is due on <strong>2026-04-23</strong></p>',
+      content_context: {
+        course_title: 'Figma Fundamentals',
+        due_date: '2026-04-23',
+        days_until_due: 1,
+        provider: 'SSED',
+      },
+      unseen: true,
+    },
+    {
+      notification_type: 'course_overdue',
+      content: '<p><strong>Advanced Typescript</strong> is now overdue.</p>',
+      content_context: {
+        course_title: 'Advanced Typescript',
+        due_date: '2026-04-21',
+        days_overdue: 1,
+        provider: 'SSED',
+      },
+      unseen: true,
+    },
+    {
+      notification_type: 'course_completed',
+      content: '<p>Congratulations! You have completed <strong>Database Fundamentals</strong></p>',
+      content_context: {
+        course_title: 'Database Fundamentals',
+        due_date: '2026-04-21',
+        badge_name: 'SQL Pro',
+        has_certificate: false,
       },
       unseen: true,
     },
@@ -102,10 +129,8 @@ function buildInitialState(): StoredNotification[] {
           ? 'https://local.openedx.io/courses/course-v1:edX+DemoX+Demo_Course/home'
           : '#',
         content_context: {
-          course_name: seed.content_context?.course_name ?? 'Intro to Open edX',
-          course_title: seed.content_context?.course_title,
-          due_date: seed.content_context?.due_date,
-          assigned_by: seed.content_context?.assigned_by,
+          ...seed.content_context,
+          course_name: String(seed.content_context?.course_name ?? 'Intro to Open edX'),
         },
         created,
         last_read: isUnseen ? null : new Date(olderStart).toISOString(),

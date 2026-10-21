@@ -17,12 +17,15 @@ const NotificationSections: React.FC = () => {
     hasMorePages,
     isPending,
     isFetching,
+    isFetchingNextPage,
     loadMore,
   } = useNotificationList(appName);
   const courseTitleMap = useCourseTitleMap(notificationList);
 
   const isSuccess = !isPending && !isFetching;
   const shouldRenderEmptyNotifications = notificationList?.length === 0 && isSuccess;
+  // Keep the button in place (disabled) while the next page loads so the list does not jump.
+  const shouldRenderLoadMore = hasMorePages && (isSuccess || isFetchingNextPage);
 
   return (
     <div className="lw-notifications-drawer__section" data-testid="notification-tray-section">
@@ -40,19 +43,23 @@ const NotificationSections: React.FC = () => {
           lastRead={notification.lastRead}
         />
       ))}
-      {isFetching && (
+      {isFetching && !isFetchingNextPage && (
         <div className="lw-notifications-drawer__loading" data-testid="notifications-loading-spinner">
           {intl.formatMessage(messages.loadingNotifications)}
         </div>
       )}
-      {hasMorePages && isSuccess && (
+      {shouldRenderLoadMore && (
         <button
           type="button"
           className="lw-notifications-drawer__load-more"
           onClick={loadMore}
+          disabled={isFetchingNextPage}
+          aria-busy={isFetchingNextPage}
           data-testid="load-more-notifications"
         >
-          {intl.formatMessage(messages.loadMoreNotifications)}
+          {intl.formatMessage(
+            isFetchingNextPage ? messages.loadingNotifications : messages.loadMoreNotifications,
+          )}
         </button>
       )}
       {shouldRenderEmptyNotifications && <NotificationEmptySection />}

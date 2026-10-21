@@ -19,6 +19,13 @@ export interface NotificationContentContext {
   courseUrl?: string,
   dueDate?: string,
   assignedBy?: string,
+  /** Course provider ("SSED"); shown as "Assigned by" on assigned cards. */
+  provider?: string,
+  daysUntilDue?: number,
+  daysOverdue?: number,
+  badgeName?: string,
+  hasCertificate?: boolean,
+  profileUrl?: string,
 }
 
 export interface NotificationItem {

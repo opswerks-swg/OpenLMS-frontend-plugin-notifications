@@ -12,13 +12,35 @@ import {
   formatDueDate,
   getCourseTitle,
   getSafeNotificationUrl,
-  isCourseAssignedNotification,
 } from './utils';
 import { useMarkNotificationRead } from './data/hook';
 import { NotificationContentContext } from './context/notificationsContext';
-import { NewCourseAssignedIcon } from './icons';
+import { getStructuredType, StructuredVariant } from './notificationTypes';
 
 timeago.register('time-locale', timeLocale);
+
+type FormatMessage = ReturnType<typeof useIntl>['formatMessage'];
+
+function structuredBody(
+  variant: StructuredVariant,
+  courseTitle: string,
+  context: NotificationContentContext | undefined,
+  formatMessage: FormatMessage,
+): string {
+  switch (variant) {
+    case 'reminder':
+      return formatMessage(messages.notificationDueReminderBody, {
+        courseTitle,
+        days: Math.max(context?.daysUntilDue ?? 1, 0),
+      });
+    case 'overdue':
+      return formatMessage(messages.notificationOverdueBody, { courseTitle });
+    case 'completed':
+      return formatMessage(messages.notificationCompletedBody, { courseTitle });
+    default:
+      return formatMessage(messages.notificationAssignedBody, { courseTitle });
+  }
+}
 
 interface NotificationRowItemProps {
   id: number,
@@ -71,7 +93,7 @@ const NotificationRowItem: React.FC<NotificationRowItemProps> = ({
   const isUnread = !lastRead;
   const relativeTime = timeago.format(createdAt, 'time-locale');
   const safeContentUrl = getSafeNotificationUrl(contentUrl) ?? '#';
-  const isAssigned = isCourseAssignedNotification(type);
+  const structured = getStructuredType(type);
 
   const handleNotificationClick = useCallback(async (event: React.MouseEvent) => {
     event.preventDefault();
@@ -86,8 +108,9 @@ const NotificationRowItem: React.FC<NotificationRowItemProps> = ({
   }, [contentUrl, id, lastRead, markAsRead]);
 
   const cardClassName = classNames('lw-notification-card', {
-    'lw-notification-card--assigned': isAssigned,
-    'lw-notification-card--unread': isUnread && !isAssigned,
+    'lw-notification-card--structured': structured,
+    [`lw-notification-card--${structured?.variant}`]: structured,
+    'lw-notification-card--unread': isUnread,
   });
 
   const cardLinkProps = {
@@ -97,23 +120,38 @@ const NotificationRowItem: React.FC<NotificationRowItemProps> = ({
     onClick: handleNotificationClick,
   };
 
-  if (isAssigned) {
+  if (structured) {
+    const { variant, Icon, title } = structured;
     const courseTitle = getCourseTitle(contentContext, courseName, contentUrl, courseTitleMap);
     const dueDateLabel = formatDueDate(contentContext?.dueDate, intl.locale);
-    const assignedBy = contentContext?.assignedBy;
+    // The design shows the course provider as the assigning authority; older rows fall back
+    // to the admin who assigned the course.
+    const assignedBy = variant === 'assigned'
+      ? contentContext?.provider || contentContext?.assignedBy
+      : undefined;
+    const badgeName = variant === 'completed' ? contentContext?.badgeName : undefined;
+    const hasCertificate = variant === 'completed' && !!contentContext?.hasCertificate;
 
     return (
       <NotificationCardLink {...cardLinkProps}>
         <span className="lw-notification-card__accent" aria-hidden="true" />
         <div className="lw-notification-card__content">
           <div className="lw-notification-card__header">
-            <NewCourseAssignedIcon />
-            <span className="lw-notification-card__heading" data-testid={`notification-assigned-title-${id}`}>
-              {intl.formatMessage(messages.notificationAssignedTitle)}
+            {isUnread && (
+              <span
+                className="lw-notification-card__unread-dot"
+                data-testid={`unread-notification-${id}`}
+                role="img"
+                aria-label={intl.formatMessage(messages.notificationUnreadLabel)}
+              />
+            )}
+            <Icon />
+            <span className="lw-notification-card__heading" data-testid={`notification-${variant}-title-${id}`}>
+              {intl.formatMessage(title)}
             </span>
           </div>
           <p className="lw-notification-card__message" data-testid={`notification-course-${id}`}>
-            {intl.formatMessage(messages.notificationAssignedBody, { courseTitle })}
+            {structuredBody(variant, courseTitle, contentContext, intl.formatMessage)}
           </p>
           {dueDateLabel && (
             <span data-testid={`notification-due-date-${id}`}>
@@ -123,6 +161,16 @@ const NotificationRowItem: React.FC<NotificationRowItemProps> = ({
           {assignedBy && (
             <span data-testid={`notification-assigned-by-${id}`}>
               {intl.formatMessage(messages.notificationAssignedByLabel, { assignedBy })}
+            </span>
+          )}
+          {badgeName && (
+            <span className="lw-notification-card__award" data-testid={`notification-badge-${id}`}>
+              {intl.formatMessage(messages.notificationBadgeEarned, { badgeName })}
+            </span>
+          )}
+          {hasCertificate && (
+            <span className="lw-notification-card__award" data-testid={`notification-certificate-${id}`}>
+              {intl.formatMessage(messages.notificationCertificateAvailable)}
             </span>
           )}
           <span

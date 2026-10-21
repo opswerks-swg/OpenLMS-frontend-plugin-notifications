@@ -20,8 +20,17 @@ import {
   markNotificationRead,
   markNotificationSeen,
 } from './api';
+import { COUNT_REFETCH_INTERVAL_MS } from '../constants';
 import type { NotificationItem, Pagination, TabsCount } from '../context/notificationsContext';
+import { isStructuredNotification } from '../notificationTypes';
 import { extractCourseIdFromUrl, humanizeCourseKey, isCourseKey } from '../utils';
+
+export interface LatestCompleted {
+  id: number,
+  courseTitle: string,
+  contentUrl: string,
+  created: string,
+}
 
 export interface NotificationAppData {
   tabsCount: TabsCount,
@@ -30,6 +39,7 @@ export interface NotificationAppData {
   showNotificationsTray: boolean,
   notificationExpiryDays: number,
   isNewNotificationViewEnabled: boolean,
+  latestCompleted?: LatestCompleted | null,
 }
 
 interface CountsResponseCamel {
@@ -38,6 +48,7 @@ interface CountsResponseCamel {
   showNotificationsTray: boolean,
   notificationExpiryDays?: number,
   isNewNotificationViewEnabled: boolean,
+  latestCompleted?: LatestCompleted | null,
 }
 
 interface ListPageCamel {
@@ -72,6 +83,7 @@ function normalizeAppData(input: CountsResponseCamel): NotificationAppData {
     showNotificationsTray: rest.showNotificationsTray,
     notificationExpiryDays: rest.notificationExpiryDays ?? 0,
     isNewNotificationViewEnabled: rest.isNewNotificationViewEnabled,
+    latestCompleted: rest.latestCompleted ?? null,
   };
 }
 
@@ -87,6 +99,9 @@ export function useAppNotifications() {
       return normalizeAppData(camelCaseObject(data) as CountsResponseCamel);
     },
     enabled: !!authenticatedUser,
+    // A learner who stays on one page still sees a new assignment's badge within a minute.
+    refetchInterval: COUNT_REFETCH_INTERVAL_MS,
+    refetchOnWindowFocus: true,
   });
 
   const didMount = useRef(false);
@@ -111,6 +126,7 @@ export interface UseNotificationListResult {
   hasMorePages: boolean,
   isPending: boolean,
   isFetching: boolean,
+  isFetchingNextPage: boolean,
   isError: boolean,
   loadMore: () => void,
 }
@@ -147,6 +163,7 @@ export function useNotificationList(appName: string): UseNotificationListResult 
     hasMorePages: !!query.hasNextPage,
     isPending: query.isPending,
     isFetching: query.isFetching,
+    isFetchingNextPage: query.isFetchingNextPage,
     isError: query.isError,
     loadMore: () => {
       query.fetchNextPage();
@@ -158,7 +175,7 @@ function collectCourseIdsForTitleResolution(notifications: NotificationItem[]): 
   const courseIds = new Set<string>();
 
   notifications.forEach((notification) => {
-    if (notification.notificationType !== 'course_assigned') {
+    if (!isStructuredNotification(notification.notificationType)) {
       return;
     }
 
