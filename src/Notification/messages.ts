@@ -28,7 +28,7 @@ const messages = defineMessages({
   },
   loadMoreNotifications: {
     id: 'notification.load.more.notifications',
-    defaultMessage: 'Load more notifications',
+    defaultMessage: 'Load more',
     description: 'Load more button to load more notifications',
   },
   loadingNotifications: {

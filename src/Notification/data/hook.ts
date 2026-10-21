@@ -126,6 +126,7 @@ export interface UseNotificationListResult {
   hasMorePages: boolean,
   isPending: boolean,
   isFetching: boolean,
+  isFetchingNextPage: boolean,
   isError: boolean,
   loadMore: () => void,
 }
@@ -162,6 +163,7 @@ export function useNotificationList(appName: string): UseNotificationListResult 
     hasMorePages: !!query.hasNextPage,
     isPending: query.isPending,
     isFetching: query.isFetching,
+    isFetchingNextPage: query.isFetchingNextPage,
     isError: query.isError,
     loadMore: () => {
       query.fetchNextPage();
