@@ -134,7 +134,11 @@ html.lw-scroll-locked body {
   transition-duration: 250ms;
   transition-timing-function: ease-in;
 
-  &--open {
+  /* Doubled class on purpose: production builds compile Sass "compressed", which strips the
+   * rtl:ignore comments before postcss-rtlcss runs, so the base transform ships as
+   * [dir=ltr] .lw-notifications-drawer (0,2,0). The open state must match that specificity
+   * and come later in source, or the drawer never slides in. */
+  &#{&}--open {
     /* rtl:ignore */
     transform: translateX(0);
     visibility: visible;
