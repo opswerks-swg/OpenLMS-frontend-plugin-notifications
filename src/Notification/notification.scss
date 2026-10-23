@@ -126,8 +126,10 @@ html.lw-scroll-locked body {
   -moz-osx-font-smoothing: grayscale;
   /* Off-canvas to the right; open slides onto the viewport (toward the left).
    * rtl:ignore — postcss-rtlcss would wrap only translateX(100%) as [dir=ltr]…,
-   * beating .--open { translateX(0) } and leaving the drawer stuck off-screen on MFEs. */
-  /* rtl:ignore */
+   * beating .--open { translateX(0) } and leaving the drawer stuck off-screen on MFEs.
+   * Must be the loud `/*!` form: production builds compile Sass with style "compressed",
+   * which strips plain comments before postcss-rtlcss ever sees the directive. */
+  /*! rtl:ignore */
   transform: translateX(100%);
   visibility: hidden;
   transition-property: transform, visibility;
@@ -135,7 +137,7 @@ html.lw-scroll-locked body {
   transition-timing-function: ease-in;
 
   &--open {
-    /* rtl:ignore */
+    /*! rtl:ignore */
     transform: translateX(0);
     visibility: visible;
     transition-duration: 300ms;
