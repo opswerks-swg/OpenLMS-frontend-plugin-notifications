@@ -19,7 +19,6 @@ import { DEFAULT_NOTIFICATION_APP, DRAWER_CLOSE_MS, DRAWER_OPEN_MS } from './con
 import { getNotificationDrawerPortalTarget } from './drawerPortalRoot';
 import { getDrawerBackdropStyle, getDrawerPanelStyle } from './drawerStyles';
 import { NotificationCloseIcon, NotificationHeadingIcon } from './icons';
-import GoogleSansFlexFonts from './GoogleSansFlexFonts';
 import { resolveDefaultAppName } from './utils';
 import { useBackdropScrollContainment } from './useBackdropScrollContainment';
 import { useDrawerEscapeKey } from './useDrawerEscapeKey';
@@ -279,7 +278,6 @@ const Notifications: React.FC<NotificationsProps> = ({
 
   return (
     <notificationsContext.Provider value={notificationContextValue}>
-      <GoogleSansFlexFonts />
       <div ref={bellWrapperRef} className={classNames('lw-notification-btn-wrapper', margins)}>
         <button
           type="button"
