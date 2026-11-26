@@ -1,7 +1,7 @@
 // Mirrors theme/tutorindigo/.../sass/extra/_header.scss notification drawer contract.
 // Paragon tokens are used where they align with LMS $primary / spacing; literals match LMS fallbacks.
 
-$lw-notification-font-family: 'Google Sans Flex', sans-serif;
+$lw-notification-font-family: var(--pgn-typography-font-family-base); // Google Sans Flex, from the theme
 
 // ---------------------------------------------------------------------------
 // Shell (live) — bell, drawer chrome, mark-all, empty list container
